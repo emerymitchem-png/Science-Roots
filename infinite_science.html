@@ -626,8 +626,8 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" aria-labelledby="infoTitle" aria-modal="true" role="dialog">
-    <section class="sheet">
+  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true">
+    <section class="sheet" aria-labelledby="infoTitle" aria-modal="true" role="dialog">
       <div class="panel-head">
         <div>
           <h3 id="infoTitle">Discovery</h3>
@@ -653,8 +653,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" aria-labelledby="collectionTitle" aria-modal="true" role="dialog">
-    <section class="modal">
+  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true">
+    <section class="modal" aria-labelledby="collectionTitle" aria-modal="true" role="dialog">
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
@@ -668,8 +668,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" aria-labelledby="rootsTitle" aria-modal="true" role="dialog">
-    <section class="modal">
+  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true">
+    <section class="modal" aria-labelledby="rootsTitle" aria-modal="true" role="dialog">
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
@@ -1239,12 +1239,17 @@
         };
       }
 
-      function createWorkspaceTile(itemId, x, y) {
+      function createWorkspaceTile(itemId, x, y, options = {}) {
+        const { persist = true, render = true } = options;
         const pos = clampTilePosition(x, y);
         const tile = { id: state.nextTileId++, itemId, x: pos.x, y: pos.y, z: ++state.zCounter };
         state.workspace.push(tile);
-        saveState();
-        renderWorkspace();
+        if (persist) {
+          saveState();
+        }
+        if (render) {
+          renderWorkspace();
+        }
         return tile;
       }
 
@@ -1540,7 +1545,9 @@
       }
 
       function openBackdrop(backdrop, initialFocusEl) {
-        modalState.lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        if (![infoBackdrop, collectionBackdrop, rootsBackdrop].some((node) => node.classList.contains('open'))) {
+          modalState.lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        }
         appShell.inert = true;
         appShell.setAttribute('aria-hidden', 'true');
         backdrop.classList.add('open');
@@ -1563,6 +1570,7 @@
           if (wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
           }
+          modalState.lastFocused = null;
         }
       }
 
@@ -1616,24 +1624,30 @@
         return state.workspace.find((tile) => tile.id === tileId) || null;
       }
 
+      function attachLostCaptureHandler(element, pointerId) {
+        if (!element?.addEventListener) return;
+        element.addEventListener('lostpointercapture', (event) => {
+          if (state.drag && state.drag.pointerId === pointerId) {
+            finishDrag(event);
+          }
+        }, { once: true });
+      }
+
       function beginDragFromInventory(itemId, pointerEvent) {
-        const deskRect = desk.getBoundingClientRect();
-        const pos = clampTilePosition(pointerEvent.clientX - deskRect.left - TILE_W / 2, pointerEvent.clientY - deskRect.top - TILE_H / 2);
-        const tile = createWorkspaceTile(itemId, pos.x, pos.y);
-        const node = desk.querySelector('.tile[data-tile-id="' + tile.id + '"]');
-        if (node) {
-          state.drag = {
-            pointerId: pointerEvent.pointerId,
-            source: 'inventory',
-            itemId,
-            tileId: tile.id,
-            startX: pointerEvent.clientX,
-            startY: pointerEvent.clientY,
-            moved: false,
-            pointerCapturedBy: node
-          };
-          node.classList.add('dragging');
-          node.setPointerCapture(pointerEvent.pointerId);
+        const row = pointerEvent.target.closest('.inventory-row');
+        state.drag = {
+          pointerId: pointerEvent.pointerId,
+          source: 'inventory',
+          itemId,
+          tileId: null,
+          startX: pointerEvent.clientX,
+          startY: pointerEvent.clientY,
+          moved: false,
+          pointerCapturedBy: row
+        };
+        if (row?.setPointerCapture) {
+          row.setPointerCapture(pointerEvent.pointerId);
+          attachLostCaptureHandler(row, pointerEvent.pointerId);
         }
       }
 
@@ -1653,6 +1667,7 @@
         const freshNode = desk.querySelector('.tile[data-tile-id="' + tileId + '"]');
         freshNode.classList.add('dragging');
         freshNode.setPointerCapture(pointerEvent.pointerId);
+        attachLostCaptureHandler(freshNode, pointerEvent.pointerId);
         state.drag = {
           pointerId: pointerEvent.pointerId,
           source: 'workspace',
@@ -1669,6 +1684,18 @@
 
       function updateDraggedTile(pointerEvent) {
         if (!state.drag) return;
+        if (state.drag.source === 'inventory' && !state.drag.tileId) {
+          const dx = pointerEvent.clientX - state.drag.startX;
+          const dy = pointerEvent.clientY - state.drag.startY;
+          if (Math.hypot(dx, dy) <= 6) {
+            return;
+          }
+          const deskRect = desk.getBoundingClientRect();
+          const pos = clampTilePosition(pointerEvent.clientX - deskRect.left - TILE_W / 2, pointerEvent.clientY - deskRect.top - TILE_H / 2);
+          const tile = createWorkspaceTile(state.drag.itemId, pos.x, pos.y, { persist: false, render: true });
+          state.drag.tileId = tile.id;
+          state.drag.moved = true;
+        }
         const tile = getWorkspaceTile(state.drag.tileId);
         if (!tile) return;
         const deskRect = desk.getBoundingClientRect();
@@ -1709,6 +1736,11 @@
         trashZone.classList.remove('active');
 
         if (!draggedTile) {
+          if (drag.source === 'inventory' && !drag.moved) {
+            state.drag = null;
+            openInfo(drag.itemId);
+            return;
+          }
           state.drag = null;
           renderWorkspace();
           return;
@@ -1803,12 +1835,6 @@
         document.addEventListener('pointermove', handleDeskPointerMove);
         document.addEventListener('pointerup', handleDeskPointerUp);
         document.addEventListener('pointercancel', handleDeskPointerUp);
-        desk.addEventListener('lostpointercapture', (event) => {
-          if (state.drag && state.drag.pointerId === event.pointerId) {
-            finishDrag(event);
-          }
-        });
-
         document.getElementById('openCollectionButton').addEventListener('click', openCollection);
         document.getElementById('closeCollectionButton').addEventListener('click', closeCollection);
         document.getElementById('openRootsButton').addEventListener('click', openRoots);
