@@ -1035,6 +1035,7 @@
       const collectionGrid = document.getElementById('collectionGrid');
       const rootGrid = document.getElementById('rootGrid');
       const rootRules = document.getElementById('rootRules');
+      const backgroundRegions = [...document.querySelectorAll('.workspace-shell, .inventory')];
       const modalState = { lastFocused: null, previousBodyOverflow: '' };
 
       function buildCatalog(defs) {
@@ -1597,6 +1598,39 @@
         return [infoBackdrop, collectionBackdrop, rootsBackdrop].find((node) => node.classList.contains('open')) || null;
       }
 
+      function supportsInert() {
+        return 'inert' in appShell;
+      }
+
+      function setBackgroundModalState(disabled) {
+        if (supportsInert()) {
+          appShell.inert = disabled;
+          if (disabled) {
+            appShell.setAttribute('inert', '');
+          } else {
+            appShell.removeAttribute('inert');
+          }
+          return;
+        }
+        backgroundRegions.forEach((region) => {
+          if (disabled) {
+            region.setAttribute('aria-hidden', 'true');
+            region.dataset.prevPointerEvents = region.style.pointerEvents || '';
+            region.style.pointerEvents = 'none';
+          } else {
+            region.removeAttribute('aria-hidden');
+            region.style.pointerEvents = region.dataset.prevPointerEvents || '';
+            delete region.dataset.prevPointerEvents;
+          }
+        });
+      }
+
+      function isEditableElement(element) {
+        if (!(element instanceof HTMLElement)) return false;
+        const tag = element.tagName;
+        return element.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      }
+
       function openBackdrop(backdrop, initialFocusEl, triggerEl) {
         const openBackdropNode = getOpenBackdrop();
         if (openBackdropNode && openBackdropNode !== backdrop) {
@@ -1606,8 +1640,7 @@
           modalState.lastFocused = triggerEl instanceof HTMLElement ? triggerEl : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
           modalState.previousBodyOverflow = document.body.style.overflow;
         }
-        appShell.inert = true;
-        appShell.setAttribute('inert', '');
+        setBackgroundModalState(true);
         backdrop.hidden = false;
         backdrop.classList.add('open');
         backdrop.setAttribute('aria-hidden', 'false');
@@ -1625,8 +1658,7 @@
         backdrop.setAttribute('aria-hidden', 'true');
         backdrop.hidden = true;
         if (!getOpenBackdrop()) {
-          appShell.inert = false;
-          appShell.removeAttribute('inert');
+          setBackgroundModalState(false);
           document.body.style.overflow = modalState.previousBodyOverflow;
           if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
@@ -1772,9 +1804,13 @@
           moved: false,
           pointerCapturedBy: row
         };
-        if (row?.setPointerCapture) {
-          row.setPointerCapture(pointerEvent.pointerId);
-          attachLostCaptureHandler(row, pointerEvent.pointerId);
+        if (row && row.setPointerCapture) {
+          try {
+            row.setPointerCapture(pointerEvent.pointerId);
+            attachLostCaptureHandler(row, pointerEvent.pointerId);
+          } catch (error) {
+            console.warn('Could not capture pointer for inventory drag.', error);
+          }
         }
       }
 
@@ -1794,8 +1830,12 @@
         const freshNode = desk.querySelector('.tile[data-tile-id="' + tileId + '"]');
         freshNode.classList.add('dragging');
         if (freshNode.setPointerCapture) {
-          freshNode.setPointerCapture(pointerEvent.pointerId);
-          attachLostCaptureHandler(freshNode, pointerEvent.pointerId);
+          try {
+            freshNode.setPointerCapture(pointerEvent.pointerId);
+            attachLostCaptureHandler(freshNode, pointerEvent.pointerId);
+          } catch (error) {
+            console.warn('Could not capture pointer for workspace drag.', error);
+          }
         }
         const freshRect = freshNode.getBoundingClientRect();
         state.drag = {
@@ -1989,6 +2029,7 @@
 
         document.addEventListener('keydown', (event) => {
           const activeBackdrop = getOpenBackdrop();
+          const focusedElement = document.activeElement;
           if (activeBackdrop && event.key === 'Tab') {
             const focusables = getFocusableElements(activeBackdrop);
             if (focusables.length) {
@@ -2016,7 +2057,10 @@
           if (activeBackdrop) {
             return;
           }
-          if ((event.key === 'Enter' || event.key === ' ') && document.activeElement === desk) {
+          if (isEditableElement(focusedElement)) {
+            return;
+          }
+          if ((event.key === 'Enter' || event.key === ' ') && focusedElement === desk) {
             event.preventDefault();
             const firstTile = desk.querySelector('.tile');
             const firstInventory = inventoryList.querySelector('.inventory-row');
@@ -2031,39 +2075,39 @@
             renderStatusBar();
             pushToast('Audit rerun', 'Audit status: ' + audit.status + '.', audit.status === 'PASS' ? 'success' : 'warn');
           }
-          if ((event.key === 'Enter' || event.key === ' ') && document.activeElement?.classList.contains('inventory-row')) {
+          if ((event.key === 'Enter' || event.key === ' ') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('inventory-row')) {
             event.preventDefault();
-            keyboardSpawnOrCombine(document.activeElement.dataset.itemId);
+            keyboardSpawnOrCombine(focusedElement.dataset.itemId);
           }
-          if ((event.key === 'i' || event.key === 'I') && document.activeElement?.classList.contains('inventory-row')) {
+          if ((event.key === 'i' || event.key === 'I') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('inventory-row')) {
             event.preventDefault();
-            openInfo(document.activeElement.dataset.itemId, document.activeElement);
+            openInfo(focusedElement.dataset.itemId, focusedElement);
           }
-          if ((event.key === 'Enter' || event.key === ' ') && document.activeElement?.classList.contains('tile')) {
+          if ((event.key === 'Enter' || event.key === ' ') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('tile')) {
             event.preventDefault();
-            openInfo(document.activeElement.dataset.itemId, document.activeElement);
+            openInfo(focusedElement.dataset.itemId, focusedElement);
           }
-          if ((event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'ArrowRight' || event.key === 'ArrowDown') && document.activeElement?.classList.contains('tile')) {
+          if ((event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'ArrowRight' || event.key === 'ArrowDown') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('tile')) {
             event.preventDefault();
             const tiles = [...desk.querySelectorAll('.tile')];
-            const currentIndex = tiles.indexOf(document.activeElement);
+            const currentIndex = tiles.indexOf(focusedElement);
             if (currentIndex !== -1 && tiles.length > 1) {
               const direction = (event.key === 'ArrowLeft' || event.key === 'ArrowUp') ? -1 : 1;
               const nextIndex = (currentIndex + direction + tiles.length) % tiles.length;
               tiles[nextIndex].focus();
             }
           }
-          if ((event.key === 's' || event.key === 'S') && document.activeElement?.classList.contains('tile')) {
+          if ((event.key === 's' || event.key === 'S') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('tile')) {
             event.preventDefault();
-            setSelectedTile(Number(document.activeElement.dataset.tileId));
+            setSelectedTile(Number(focusedElement.dataset.tileId));
           }
-          if ((event.key === 'c' || event.key === 'C') && document.activeElement?.classList.contains('tile')) {
+          if ((event.key === 'c' || event.key === 'C') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('tile')) {
             event.preventDefault();
-            keyboardCombineSelectedWithTile(Number(document.activeElement.dataset.tileId));
+            keyboardCombineSelectedWithTile(Number(focusedElement.dataset.tileId));
           }
-          if ((event.key === 'Delete' || event.key === 'Backspace') && document.activeElement?.classList.contains('tile')) {
+          if ((event.key === 'Delete' || event.key === 'Backspace') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('tile')) {
             event.preventDefault();
-            removeWorkspaceTile(Number(document.activeElement.dataset.tileId));
+            removeWorkspaceTile(Number(focusedElement.dataset.tileId));
           }
         });
       }
