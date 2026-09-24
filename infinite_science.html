@@ -1573,7 +1573,7 @@
             infoRecipes.appendChild(row);
           }
         }
-        openBackdrop(infoBackdrop, document.getElementById('closeInfoButton'), triggerEl);
+        openBackdrop(infoBackdrop, triggerEl);
       }
 
       function closeInfo() {
@@ -1583,7 +1583,7 @@
 
       function openCollection(triggerEl) {
         renderCollection();
-        openBackdrop(collectionBackdrop, document.getElementById('closeCollectionButton'), triggerEl);
+        openBackdrop(collectionBackdrop, triggerEl);
       }
 
       function closeCollection() {
@@ -1592,7 +1592,7 @@
 
       function openRoots(triggerEl) {
         renderRootLibrary();
-        openBackdrop(rootsBackdrop, document.getElementById('closeRootsButton'), triggerEl);
+        openBackdrop(rootsBackdrop, triggerEl);
       }
 
       function closeRoots() {
@@ -1650,7 +1650,7 @@
         return element.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
       }
 
-      function openBackdrop(backdrop, initialFocusEl, triggerEl) {
+      function openBackdrop(backdrop, triggerEl) {
         const openBackdropNode = getOpenBackdrop();
         if (openBackdropNode && openBackdropNode !== backdrop) {
           closeBackdrop(openBackdropNode, { restoreFocus: false, clearStoredFocus: false });
@@ -1664,7 +1664,7 @@
         backdrop.classList.add('open');
         backdrop.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
-        const focusTarget = initialFocusEl || getFocusableElements(backdrop)[0] || backdrop.querySelector('[role=\"dialog\"]');
+        const focusTarget = backdrop;
         if (focusTarget) {
           focusTarget.focus();
         }
@@ -2072,7 +2072,13 @@
             if (focusables.length) {
               const first = focusables[0];
               const last = focusables[focusables.length - 1];
-              if (event.shiftKey && document.activeElement === first) {
+              if (!event.shiftKey && document.activeElement === activeBackdrop) {
+                event.preventDefault();
+                first.focus();
+              } else if (event.shiftKey && document.activeElement === activeBackdrop) {
+                event.preventDefault();
+                last.focus();
+              } else if (event.shiftKey && document.activeElement === first) {
                 event.preventDefault();
                 last.focus();
               } else if (!event.shiftKey && document.activeElement === last) {
