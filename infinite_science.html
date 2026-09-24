@@ -1634,7 +1634,7 @@
       function openBackdrop(backdrop, initialFocusEl, triggerEl) {
         const openBackdropNode = getOpenBackdrop();
         if (openBackdropNode && openBackdropNode !== backdrop) {
-          closeBackdrop(openBackdropNode, { restoreFocus: false });
+          closeBackdrop(openBackdropNode, { restoreFocus: false, clearStoredFocus: false });
         }
         if (!getOpenBackdrop()) {
           modalState.lastFocused = triggerEl instanceof HTMLElement ? triggerEl : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
@@ -1652,7 +1652,7 @@
       }
 
       function closeBackdrop(backdrop, options = {}) {
-        const { restoreFocus = true } = options;
+        const { restoreFocus = true, clearStoredFocus = true } = options;
         const wasOpen = backdrop.classList.contains('open');
         backdrop.classList.remove('open');
         backdrop.setAttribute('aria-hidden', 'true');
@@ -1663,8 +1663,10 @@
           if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
           }
-          modalState.lastFocused = null;
-          modalState.previousBodyOverflow = '';
+          if (clearStoredFocus) {
+            modalState.lastFocused = null;
+            modalState.previousBodyOverflow = '';
+          }
         }
       }
 
@@ -1793,6 +1795,7 @@
       }
 
       function beginDragFromInventory(itemId, pointerEvent) {
+        pointerEvent.preventDefault();
         const row = pointerEvent.target.closest('.inventory-row');
         state.drag = {
           pointerId: pointerEvent.pointerId,
@@ -1822,6 +1825,7 @@
       }
 
       function beginDragFromWorkspace(tileId, pointerEvent) {
+        pointerEvent.preventDefault();
         const tile = getWorkspaceTile(tileId);
         const node = desk.querySelector('.tile[data-tile-id="' + tileId + '"]');
         if (!tile || !node) return;
@@ -1907,7 +1911,11 @@
         trashZone.classList.remove('active');
 
         if (drag.pointerCapturedBy && drag.pointerCapturedBy.hasPointerCapture && drag.pointerCapturedBy.hasPointerCapture(drag.pointerId)) {
-          drag.pointerCapturedBy.releasePointerCapture(drag.pointerId);
+          try {
+            drag.pointerCapturedBy.releasePointerCapture(drag.pointerId);
+          } catch (error) {
+            console.warn('Could not release pointer capture after drag.', error);
+          }
         }
 
         if (!draggedTile) {
