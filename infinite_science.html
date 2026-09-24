@@ -1297,6 +1297,36 @@
         }
       }
 
+      function setAppShellModalState(isModalOpen) {
+        if ('inert' in appShell) {
+          appShell.inert = isModalOpen;
+        } else {
+          appShell.setAttribute('aria-hidden', isModalOpen ? 'true' : 'false');
+          appShell.style.pointerEvents = isModalOpen ? 'none' : '';
+        }
+      }
+
+      function normalizeWorkspacePositions(options = {}) {
+        const { persist = true } = options;
+        const bounds = desk.getBoundingClientRect();
+        if (bounds.width <= 0 || bounds.height <= 0) {
+          return false;
+        }
+        let changed = false;
+        for (const tile of state.workspace) {
+          const pos = clampTilePosition(tile.x, tile.y);
+          if (tile.x !== pos.x || tile.y !== pos.y) {
+            tile.x = pos.x;
+            tile.y = pos.y;
+            changed = true;
+          }
+        }
+        if (changed && persist) {
+          saveState();
+        }
+        return changed;
+      }
+
       function loadState() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
@@ -1310,13 +1340,11 @@
             state.workspace = parsed.workspace
               .filter((tile) => tile && CATALOG[tile.itemId] && state.discovered.has(tile.itemId))
               .map((tile) => {
-                const safeX = Number.isFinite(Number(tile.x)) ? Number(tile.x) : 0;
-                const safeY = Number.isFinite(Number(tile.y)) ? Number(tile.y) : 0;
                 return {
                   id: Number.isFinite(Number(tile.id)) ? Number(tile.id) : state.nextTileId++,
                   itemId: tile.itemId,
-                  x: safeX,
-                  y: safeY,
+                  x: Number.isFinite(Number(tile.x)) ? Number(tile.x) : 0,
+                  y: Number.isFinite(Number(tile.y)) ? Number(tile.y) : 0,
                   z: Number.isFinite(Number(tile.z)) ? Number(tile.z) : 1
                 };
               });
@@ -1726,7 +1754,7 @@
           closeBackdrop(openBackdropNode, { restoreFocus: false, clearStoredFocus: false });
         }
         modalState.lastFocused = nextFocusTarget;
-        appShell.inert = true;
+        setAppShellModalState(true);
         backdrop.hidden = false;
         backdrop.classList.add('open');
         backdrop.setAttribute('aria-hidden', 'false');
@@ -1753,7 +1781,7 @@
           dialog.hidden = true;
         }
         if (!getOpenBackdrop()) {
-          appShell.inert = false;
+          setAppShellModalState(false);
           document.body.style.overflow = '';
           if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
@@ -2197,6 +2225,11 @@
       installEvents();
       runAudit(true);
       renderAll();
+      window.requestAnimationFrame(() => {
+        if (normalizeWorkspacePositions()) {
+          renderWorkspace();
+        }
+      });
     }());
   </script>
 </body>
