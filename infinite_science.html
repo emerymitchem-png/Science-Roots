@@ -1021,16 +1021,16 @@
       const INVALID_RECIPE_REFERENCES = [];
       const RESERVED_PAIR_CONFLICTS = [];
       const RESERVED_PAIR_EXPECTATIONS = [
-        { a: 'biology', b: 'chemistry', result: 'biochemistry' },
-        { a: 'biology', b: 'physics', result: 'biophysics' },
-        { a: 'biology', b: 'earth_science', result: 'geobiology' },
-        { a: 'biology', b: 'astronomy', result: 'astrobiology' },
-        { a: 'physics', b: 'chemistry', result: 'physical_chemistry' },
-        { a: 'physics', b: 'earth_science', result: 'geophysics' },
-        { a: 'physics', b: 'astronomy', result: 'astrophysics' },
-        { a: 'chemistry', b: 'earth_science', result: 'geochemistry' },
-        { a: 'chemistry', b: 'astronomy', result: 'astrochemistry' },
-        { a: 'earth_science', b: 'astronomy', result: 'planetary_science' }
+        { label: 'Biology + Chemistry', a: 'biology', b: 'chemistry', result: 'biochemistry' },
+        { label: 'Biology + Physics', a: 'biology', b: 'physics', result: 'biophysics' },
+        { label: 'Biology + Earth Science', a: 'biology', b: 'earth_science', result: 'geobiology' },
+        { label: 'Biology + Astronomy', a: 'biology', b: 'astronomy', result: 'astrobiology' },
+        { label: 'Physics + Chemistry', a: 'physics', b: 'chemistry', result: 'physical_chemistry' },
+        { label: 'Physics + Earth Science', a: 'physics', b: 'earth_science', result: 'geophysics' },
+        { label: 'Physics + Astronomy', a: 'physics', b: 'astronomy', result: 'astrophysics' },
+        { label: 'Chemistry + Earth Science', a: 'chemistry', b: 'earth_science', result: 'geochemistry' },
+        { label: 'Chemistry + Astronomy', a: 'chemistry', b: 'astronomy', result: 'astrochemistry' },
+        { label: 'Earth Science + Astronomy', a: 'earth_science', b: 'astronomy', result: 'planetary_science' }
       ];
       const ROOT_REGRESSION_CASES = [
         { label: 'Biology + Microscopic', a: 'biology', b: 'microscopic', expected: 'microbiology' },
@@ -2152,14 +2152,20 @@
       registerRecipes();
       loadState();
       installEvents();
+      function syncDebugHooks() {
+        if (window.location.hash.includes('debug')) {
+          window.runInfiniteScienceAudit = function () {
+            return runAudit(true);
+          };
+          return;
+        }
+        delete window.runInfiniteScienceAudit;
+      }
+
       runAudit(true);
       renderAll();
-
-      if (window.location.hash.includes('debug')) {
-        window.runInfiniteScienceAudit = function () {
-          return runAudit(true);
-        };
-      }
+      syncDebugHooks();
+      window.addEventListener('hashchange', syncDebugHooks);
     }());
   </script>
 </body>
