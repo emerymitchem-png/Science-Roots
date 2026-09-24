@@ -631,8 +631,8 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="modal-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
-    <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="modal-backdrop" id="infoBackdrop" aria-hidden="true" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
+    <section class="sheet">
       <div class="panel-head">
         <div>
           <h3 id="infoTitle">Discovery</h3>
@@ -658,8 +658,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" hidden>
-    <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
+    <section class="modal">
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
@@ -673,8 +673,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" hidden>
-    <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
+    <section class="modal">
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
@@ -1612,6 +1612,10 @@
         return typeof HTMLElement !== 'undefined' && 'inert' in HTMLElement.prototype;
       }
 
+      function isDebugMode() {
+        return window.location.hash.includes('debug');
+      }
+
       function pointerIsInsideDesk(clientX, clientY) {
         const rect = desk.getBoundingClientRect();
         return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
@@ -1847,6 +1851,10 @@
         bringTileToFront(tileId);
         renderWorkspace();
         const freshNode = desk.querySelector('.tile[data-tile-id="' + tileId + '"]');
+        if (!freshNode) {
+          state.drag = null;
+          return;
+        }
         freshNode.classList.add('dragging');
         if (freshNode.setPointerCapture) {
           try {
@@ -2091,7 +2099,7 @@
               firstInventory.focus();
             }
           }
-          if (event.shiftKey && (event.key === 'A' || event.key === 'a')) {
+          if (isDebugMode() && event.shiftKey && event.altKey && (event.key === 'A' || event.key === 'a')) {
             const audit = runAudit(true);
             renderStatusBar();
             pushToast('Audit rerun', 'Audit status: ' + audit.status + '.', audit.status === 'PASS' ? 'success' : 'warn');
@@ -2139,7 +2147,7 @@
       runAudit(true);
       renderAll();
 
-      if (window.location.hash.includes('debug')) {
+      if (isDebugMode()) {
         window.runInfiniteScienceAudit = function () {
           return runAudit(true);
         };
