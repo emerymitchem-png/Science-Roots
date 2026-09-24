@@ -632,7 +632,7 @@
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
   <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
-    <section class="sheet" aria-labelledby="infoTitle" aria-modal="true" role="dialog" tabindex="-1">
+    <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="infoTitle">Discovery</h3>
@@ -659,11 +659,11 @@
   </div>
 
   <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" hidden>
-    <section class="modal" aria-labelledby="collectionTitle" aria-modal="true" role="dialog" tabindex="-1">
+    <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
-          <p>Everything you have unlocked so far, grouped in a compact notebook view.</p>
+          <p id="collectionSubtitle">Everything you have unlocked so far, grouped in a compact notebook view.</p>
         </div>
         <div class="panel-actions">
           <button id="closeCollectionButton" type="button" aria-label="Close collection panel">Close</button>
@@ -674,11 +674,11 @@
   </div>
 
   <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" hidden>
-    <section class="modal" aria-labelledby="rootsTitle" aria-modal="true" role="dialog" tabindex="-1">
+    <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
-          <p>Root-built specialties use exactly one core subject plus approved modifier roots.</p>
+          <p id="rootsSubtitle">Root-built specialties use exactly one core subject plus approved modifier roots.</p>
         </div>
         <div class="panel-actions">
           <button id="closeRootsButton" type="button" aria-label="Close root library panel">Close</button>
@@ -1725,7 +1725,7 @@
       }
 
       function attachLostCaptureHandler(element, pointerId) {
-        if (!element?.addEventListener) return;
+        if (!element || !element.addEventListener) return;
         element.addEventListener('lostpointercapture', (event) => {
           if (state.drag && state.drag.pointerId === pointerId) {
             finishDrag(event);
@@ -1848,8 +1848,8 @@
           return;
         }
 
-        if (drag.pointerCapturedBy && drag.pointerCapturedBy.hasPointerCapture(pointerEvent.pointerId)) {
-          drag.pointerCapturedBy.releasePointerCapture(pointerEvent.pointerId);
+        if (drag.pointerCapturedBy && drag.pointerCapturedBy.hasPointerCapture && drag.pointerCapturedBy.hasPointerCapture(drag.pointerId)) {
+          drag.pointerCapturedBy.releasePointerCapture(drag.pointerId);
         }
 
         if (wasClick) {
