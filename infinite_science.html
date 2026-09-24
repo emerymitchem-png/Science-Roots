@@ -1851,9 +1851,9 @@
         }, { once: true });
       }
 
-      function beginDragFromInventory(itemId, pointerEvent) {
+      function beginDragFromInventory(itemId, pointerEvent, rowElement) {
         pointerEvent.preventDefault();
-        const row = pointerEvent.target.closest('.inventory-row');
+        const row = rowElement || (pointerEvent.target instanceof Element ? pointerEvent.target.closest('.inventory-row') : null);
         state.drag = {
           pointerId: pointerEvent.pointerId,
           source: 'inventory',
@@ -1936,7 +1936,6 @@
           const pos = clampTilePosition(pointerEvent.clientX - deskRect.left - TILE_W / 2, pointerEvent.clientY - deskRect.top - TILE_H / 2);
           const tile = createWorkspaceTile(state.drag.itemId, pos.x, pos.y, { persist: false, render: true });
           state.drag.tileId = tile.id;
-          state.drag.moved = true;
         }
         const tile = getWorkspaceTile(state.drag.tileId);
         if (!tile) return;
@@ -2055,13 +2054,15 @@
         });
 
         inventoryList.addEventListener('pointerdown', (event) => {
+          if (!(event.target instanceof Element)) return;
           const row = event.target.closest('.inventory-row');
           if (!row) return;
           const itemId = row.dataset.itemId;
-          beginDragFromInventory(itemId, event);
+          beginDragFromInventory(itemId, event, row);
         });
 
         desk.addEventListener('pointerdown', (event) => {
+          if (!(event.target instanceof Element)) return;
           const tile = event.target.closest('.tile');
           if (!tile) return;
           beginDragFromWorkspace(Number(tile.dataset.tileId), event);
