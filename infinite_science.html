@@ -631,7 +631,7 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
+  <div class="modal-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
     <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
@@ -1596,6 +1596,7 @@
           modalState.lastFocused = triggerEl instanceof HTMLElement ? triggerEl : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
         }
         appShell.inert = true;
+        appShell.setAttribute('inert', '');
         backdrop.hidden = false;
         backdrop.classList.add('open');
         backdrop.setAttribute('aria-hidden', 'false');
@@ -1614,6 +1615,7 @@
         backdrop.hidden = true;
         if (!getOpenBackdrop()) {
           appShell.inert = false;
+          appShell.removeAttribute('inert');
           document.body.style.overflow = '';
           if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
@@ -2036,22 +2038,11 @@
       runAudit(true);
       renderAll();
 
-      window.runInfiniteScienceAudit = function () {
-        return runAudit(true);
-      };
-
-      window.infiniteScienceDebug = {
-        combineById(a, b) {
-          const recipe = resolveRecipe(a, b);
-          return recipe ? recipe.result : null;
-        },
-        combineByLabel(aLabel, bLabel) {
-          const a = ITEM_DEFS.find((item) => item.label === aLabel);
-          const b = ITEM_DEFS.find((item) => item.label === bLabel);
-          return a && b ? (resolveRecipe(a.id, b.id)?.result || null) : null;
-        },
-        catalog: CATALOG
-      };
+      if (window.location.hash.includes('debug')) {
+        window.runInfiniteScienceAudit = function () {
+          return runAudit(true);
+        };
+      }
     }());
   </script>
 </body>
