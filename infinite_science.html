@@ -1322,8 +1322,9 @@
               });
           }
           const maxTileId = state.workspace.reduce((maxId, tile) => Math.max(maxId, tile.id), 0);
+          const maxZ = state.workspace.reduce((highestZ, tile) => Math.max(highestZ, tile.z || 0), 0);
           state.nextTileId = Math.max(maxTileId + 1, Number(parsed.nextTileId) || 1, 1);
-          state.zCounter = Math.max(1, Number(parsed.zCounter) || state.workspace.length + 1);
+          state.zCounter = Math.max(maxZ, Number(parsed.zCounter) || 0, 1);
         } catch (error) {
           console.warn('Could not load saved Infinite Science state.', error);
         }
