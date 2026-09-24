@@ -631,8 +631,8 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" role="presentation" hidden>
-    <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
+    <section class="sheet">
       <div class="panel-head">
         <div>
           <h3 id="infoTitle">Discovery</h3>
@@ -658,8 +658,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" role="presentation" hidden>
-    <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
+    <section class="modal">
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
@@ -673,8 +673,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" role="presentation" hidden>
-    <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
+    <section class="modal">
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
@@ -1232,12 +1232,11 @@
               .map((tile) => {
                 const safeX = Number.isFinite(Number(tile.x)) ? Number(tile.x) : 0;
                 const safeY = Number.isFinite(Number(tile.y)) ? Number(tile.y) : 0;
-                const pos = clampTilePosition(safeX, safeY);
                 return {
                   id: Number.isFinite(Number(tile.id)) ? Number(tile.id) : state.nextTileId++,
                   itemId: tile.itemId,
-                  x: pos.x,
-                  y: pos.y,
+                  x: safeX,
+                  y: safeY,
                   z: Number.isFinite(Number(tile.z)) ? Number(tile.z) : 1
                 };
               });
@@ -1434,14 +1433,17 @@
         for (const tile of sorted) {
           const item = CATALOG[tile.itemId];
           if (!item) continue;
+          const pos = clampTilePosition(tile.x, tile.y);
+          tile.x = pos.x;
+          tile.y = pos.y;
           const node = document.createElement('button');
           node.type = 'button';
           node.className = 'tile';
           node.dataset.tileId = String(tile.id);
           node.dataset.itemId = item.id;
           node.setAttribute('aria-label', item.label + '. Press Enter for info, S to select, C to combine with a selected tile, or Delete to discard.');
-          node.style.left = tile.x + 'px';
-          node.style.top = tile.y + 'px';
+          node.style.left = pos.x + 'px';
+          node.style.top = pos.y + 'px';
           node.style.zIndex = String(tile.z);
           node.innerHTML = [
             '<div class="tile-label"></div>',
@@ -1846,6 +1848,10 @@
         setTileHighlight(null, null);
         trashZone.classList.remove('active');
 
+        if (drag.pointerCapturedBy && drag.pointerCapturedBy.hasPointerCapture && drag.pointerCapturedBy.hasPointerCapture(drag.pointerId)) {
+          drag.pointerCapturedBy.releasePointerCapture(drag.pointerId);
+        }
+
         if (!draggedTile) {
           if (drag.source === 'inventory' && !drag.moved) {
             state.drag = null;
@@ -1855,10 +1861,6 @@
           state.drag = null;
           renderWorkspace();
           return;
-        }
-
-        if (drag.pointerCapturedBy && drag.pointerCapturedBy.hasPointerCapture && drag.pointerCapturedBy.hasPointerCapture(drag.pointerId)) {
-          drag.pointerCapturedBy.releasePointerCapture(drag.pointerId);
         }
 
         if (wasClick) {
