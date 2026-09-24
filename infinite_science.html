@@ -604,7 +604,7 @@
         </div>
       </header>
       <div class="desk-wrap">
-        <div class="desk" id="desk" tabindex="0" aria-label="Workspace desk">
+        <div class="desk" id="desk" aria-label="Workspace desk">
           <div class="desk-empty" id="deskEmptyHint">Start by dragging a science from the inventory onto the desk.<br />Click any tile to read its note. Press <strong>Shift + A</strong> to rerun the development audit.</div>
           <div class="trash-zone" id="trashZone" aria-hidden="true">
             <div>
@@ -1242,7 +1242,8 @@
                 };
               });
           }
-          state.nextTileId = Math.max(1, Number(parsed.nextTileId) || 1);
+          const maxTileId = state.workspace.reduce((maxId, tile) => Math.max(maxId, tile.id), 0);
+          state.nextTileId = Math.max(maxTileId + 1, Number(parsed.nextTileId) || 1, 1);
           state.zCounter = Math.max(1, Number(parsed.zCounter) || state.workspace.length + 1);
         } catch (error) {
           console.warn('Could not load saved Infinite Science state.', error);
@@ -1656,7 +1657,8 @@
         if (selectedTile) {
           const recipe = resolveRecipe(selectedTile.itemId, itemId);
           if (recipe) {
-            combineTilesIntoResult(selectedTile, { id: -1, itemId, x: selectedTile.x, y: selectedTile.y }, recipe.result);
+            const helperTile = createWorkspaceTile(itemId, selectedTile.x + 18, selectedTile.y + 18, { persist: false, render: false });
+            combineTilesIntoResult(selectedTile, helperTile, recipe.result);
             return;
           }
         }
@@ -1766,13 +1768,14 @@
         freshNode.classList.add('dragging');
         freshNode.setPointerCapture(pointerEvent.pointerId);
         attachLostCaptureHandler(freshNode, pointerEvent.pointerId);
+        const freshRect = freshNode.getBoundingClientRect();
         state.drag = {
           pointerId: pointerEvent.pointerId,
           source: 'workspace',
           itemId: tile.itemId,
           tileId,
-          offsetX: pointerEvent.clientX - freshNode.getBoundingClientRect().left,
-          offsetY: pointerEvent.clientY - freshNode.getBoundingClientRect().top,
+          offsetX: pointerEvent.clientX - freshRect.left,
+          offsetY: pointerEvent.clientY - freshRect.top,
           startX: pointerEvent.clientX,
           startY: pointerEvent.clientY,
           moved: false,
@@ -1829,7 +1832,8 @@
         const wasClick = !drag.moved;
         const targetTile = drag.targetTileId ? getWorkspaceTile(drag.targetTileId) : null;
         const recipe = drag.targetRecipe;
-        const onTrash = trashHit(pointerEvent.clientX, pointerEvent.clientY);
+        const hasPointerCoords = Number.isFinite(pointerEvent.clientX) && Number.isFinite(pointerEvent.clientY);
+        const onTrash = hasPointerCoords ? trashHit(pointerEvent.clientX, pointerEvent.clientY) : false;
         setTileHighlight(null, null);
         trashZone.classList.remove('active');
 
