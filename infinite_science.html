@@ -1026,6 +1026,7 @@
       const collectionGrid = document.getElementById('collectionGrid');
       const rootGrid = document.getElementById('rootGrid');
       const rootRules = document.getElementById('rootRules');
+      const modalState = { lastFocused: null };
 
       function buildCatalog(defs) {
         const catalog = {};
@@ -1229,9 +1230,11 @@
 
       function clampTilePosition(x, y) {
         const bounds = desk.getBoundingClientRect();
+        const maxX = Math.max(0, bounds.width - TILE_W);
+        const maxY = Math.max(0, bounds.height - TILE_H);
         return {
-          x: Math.max(0, Math.min(bounds.width - TILE_W, x)),
-          y: Math.max(0, Math.min(bounds.height - TILE_H, y))
+          x: Math.max(0, Math.min(maxX, x)),
+          y: Math.max(0, Math.min(maxY, y))
         };
       }
 
@@ -1502,36 +1505,58 @@
             infoRecipes.appendChild(row);
           }
         }
-        infoBackdrop.classList.add('open');
-        infoBackdrop.setAttribute('aria-hidden', 'false');
+        openBackdrop(infoBackdrop, document.getElementById('closeInfoButton'));
       }
 
       function closeInfo() {
         state.activeInfoId = null;
-        infoBackdrop.classList.remove('open');
-        infoBackdrop.setAttribute('aria-hidden', 'true');
+        closeBackdrop(infoBackdrop);
       }
 
       function openCollection() {
         renderCollection();
-        collectionBackdrop.classList.add('open');
-        collectionBackdrop.setAttribute('aria-hidden', 'false');
+        openBackdrop(collectionBackdrop, document.getElementById('closeCollectionButton'));
       }
 
       function closeCollection() {
-        collectionBackdrop.classList.remove('open');
-        collectionBackdrop.setAttribute('aria-hidden', 'true');
+        closeBackdrop(collectionBackdrop);
       }
 
       function openRoots() {
         renderRootLibrary();
-        rootsBackdrop.classList.add('open');
-        rootsBackdrop.setAttribute('aria-hidden', 'false');
+        openBackdrop(rootsBackdrop, document.getElementById('closeRootsButton'));
       }
 
       function closeRoots() {
-        rootsBackdrop.classList.remove('open');
-        rootsBackdrop.setAttribute('aria-hidden', 'true');
+        closeBackdrop(rootsBackdrop);
+      }
+
+      function getFocusableElements(container) {
+        return [...container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])')]
+          .filter((el) => !el.disabled && el.getAttribute('aria-hidden') !== 'true' && !el.closest('.hidden'));
+      }
+
+      function openBackdrop(backdrop, initialFocusEl) {
+        modalState.lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        backdrop.classList.add('open');
+        backdrop.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        const focusTarget = initialFocusEl || getFocusableElements(backdrop)[0] || backdrop.querySelector('[role=\"dialog\"]');
+        if (focusTarget) {
+          focusTarget.focus();
+        }
+      }
+
+      function closeBackdrop(backdrop) {
+        const wasOpen = backdrop.classList.contains('open');
+        backdrop.classList.remove('open');
+        backdrop.setAttribute('aria-hidden', 'true');
+        if (![infoBackdrop, collectionBackdrop, rootsBackdrop].some((node) => node.classList.contains('open'))) {
+          document.body.style.overflow = '';
+          if (wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
+            modalState.lastFocused.focus();
+          }
+        }
       }
 
       function discover(itemId) {
@@ -1799,6 +1824,21 @@
         });
 
         document.addEventListener('keydown', (event) => {
+          const activeBackdrop = [infoBackdrop, collectionBackdrop, rootsBackdrop].find((node) => node.classList.contains('open'));
+          if (activeBackdrop && event.key === 'Tab') {
+            const focusables = getFocusableElements(activeBackdrop);
+            if (focusables.length) {
+              const first = focusables[0];
+              const last = focusables[focusables.length - 1];
+              if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+              } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+              }
+            }
+          }
           if (event.key === 'Escape') {
             closeInfo();
             closeCollection();
