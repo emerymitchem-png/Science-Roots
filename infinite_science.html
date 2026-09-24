@@ -1196,12 +1196,18 @@
 
       function computeReachable() {
         const reachable = new Set(STARTING_ITEM_IDS);
+        const registeredRecipes = [
+          ...GENERAL_RECIPES.values(),
+          ...ROOT_RECIPES.values()
+        ];
         let changed = true;
         while (changed) {
           changed = false;
-          for (const recipe of CURATED_RECIPES) {
-            if (!CATALOG[recipe.a] || !CATALOG[recipe.b] || !CATALOG[recipe.result]) continue;
-            if (reachable.has(recipe.a) && reachable.has(recipe.b) && !reachable.has(recipe.result)) {
+          for (const recipe of registeredRecipes) {
+            if (!reachable.has(recipe.a) || !reachable.has(recipe.b) || reachable.has(recipe.result)) {
+              continue;
+            }
+            if (resolveRecipeResult(recipe.a, recipe.b) === recipe.result) {
               reachable.add(recipe.result);
               changed = true;
             }
@@ -1706,13 +1712,14 @@
 
       function openBackdrop(backdrop, initialFocusEl, triggerEl) {
         const openBackdropNode = getOpenBackdrop();
-        const preservedFocus = modalState.lastFocused
-          || (triggerEl instanceof HTMLElement ? triggerEl : (document.activeElement instanceof HTMLElement ? document.activeElement : null));
+        const nextFocusTarget = triggerEl instanceof HTMLElement
+          ? triggerEl
+          : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
         if (openBackdropNode && openBackdropNode !== backdrop) {
           closeBackdrop(openBackdropNode, { restoreFocus: false, clearStoredFocus: false });
         }
         if (!getOpenBackdrop()) {
-          modalState.lastFocused = preservedFocus;
+          modalState.lastFocused = nextFocusTarget;
         }
         appShell.inert = true;
         appShell.setAttribute('inert', '');
@@ -2166,20 +2173,8 @@
       registerRecipes();
       loadState();
       installEvents();
-      function syncDebugHooks() {
-        if (window.location.hash.includes('debug')) {
-          window.runInfiniteScienceAudit = function () {
-            return runAudit(true);
-          };
-          return;
-        }
-        delete window.runInfiniteScienceAudit;
-      }
-
       runAudit(true);
       renderAll();
-      syncDebugHooks();
-      window.addEventListener('hashchange', syncDebugHooks);
     }());
   </script>
 </body>
