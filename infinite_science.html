@@ -1033,8 +1033,8 @@
       const collectionGrid = document.getElementById('collectionGrid');
       const rootGrid = document.getElementById('rootGrid');
       const rootRules = document.getElementById('rootRules');
-      const backgroundRegions = [...document.querySelectorAll('.workspace-shell, .inventory')];
       const modalState = { lastFocused: null, previousBodyOverflow: '' };
+      let cachedAuditResult = null;
 
       function buildCatalog(defs) {
         const catalog = {};
@@ -1165,19 +1165,25 @@
       }
 
       function runAudit(logToConsole = true) {
-        const curatedIds = ITEM_DEFS.filter((item) => !STARTING_SET.has(item.id)).map((item) => item.id);
-        const reachable = computeReachable();
-        const unreachable = curatedIds.filter((id) => !reachable.has(id));
-        const totalCurated = curatedIds.length;
+        if (!cachedAuditResult) {
+          const curatedIds = ITEM_DEFS.filter((item) => !STARTING_SET.has(item.id)).map((item) => item.id);
+          const reachable = computeReachable();
+          const unreachable = curatedIds.filter((id) => !reachable.has(id));
+          const totalCurated = curatedIds.length;
+          cachedAuditResult = {
+            totalCurated,
+            reachableCurated: totalCurated - unreachable.length,
+            unreachableCurated: unreachable.length,
+            duplicateRecipePairs: DUPLICATE_RECIPE_PAIRS.length,
+            invalidRecipeReferences: INVALID_RECIPE_REFERENCES.length,
+            reservedPairConflicts: RESERVED_PAIR_CONFLICTS.length,
+            unreachableItems: unreachable,
+            status: (unreachable.length === 0 && DUPLICATE_RECIPE_PAIRS.length === 0 && INVALID_RECIPE_REFERENCES.length === 0 && RESERVED_PAIR_CONFLICTS.length === 0) ? 'PASS' : 'FAIL'
+          };
+        }
         const audit = {
-          totalCurated,
-          reachableCurated: totalCurated - unreachable.length,
-          unreachableCurated: unreachable.length,
-          duplicateRecipePairs: DUPLICATE_RECIPE_PAIRS.length,
-          invalidRecipeReferences: INVALID_RECIPE_REFERENCES.length,
-          reservedPairConflicts: RESERVED_PAIR_CONFLICTS.length,
-          unreachableItems: unreachable,
-          status: (unreachable.length === 0 && DUPLICATE_RECIPE_PAIRS.length === 0 && INVALID_RECIPE_REFERENCES.length === 0 && RESERVED_PAIR_CONFLICTS.length === 0) ? 'PASS' : 'FAIL'
+          ...cachedAuditResult,
+          unreachableItems: [...cachedAuditResult.unreachableItems]
         };
         state.lastAudit = audit;
 
@@ -1215,6 +1221,7 @@
         };
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          state.storageWarningShown = false;
         } catch (error) {
           if (!state.storageWarningShown) {
             state.storageWarningShown = true;
@@ -1638,31 +1645,26 @@
       }
 
       function setBackgroundModalState(disabled) {
-        backgroundRegions.forEach((region) => {
-          if (disabled) {
-            region.setAttribute('aria-hidden', 'true');
-          } else {
-            region.removeAttribute('aria-hidden');
-          }
-        });
         if (supportsInert()) {
           appShell.inert = disabled;
           if (disabled) {
             appShell.setAttribute('inert', '');
+            appShell.setAttribute('aria-hidden', 'true');
           } else {
             appShell.removeAttribute('inert');
+            appShell.removeAttribute('aria-hidden');
           }
           return;
         }
-        backgroundRegions.forEach((region) => {
-          if (disabled) {
-            region.dataset.prevPointerEvents = region.style.pointerEvents || '';
-            region.style.pointerEvents = 'none';
-          } else {
-            region.style.pointerEvents = region.dataset.prevPointerEvents || '';
-            delete region.dataset.prevPointerEvents;
-          }
-        });
+        if (disabled) {
+          appShell.setAttribute('aria-hidden', 'true');
+          appShell.dataset.prevPointerEvents = appShell.style.pointerEvents || '';
+          appShell.style.pointerEvents = 'none';
+        } else {
+          appShell.removeAttribute('aria-hidden');
+          appShell.style.pointerEvents = appShell.dataset.prevPointerEvents || '';
+          delete appShell.dataset.prevPointerEvents;
+        }
       }
 
       function isEditableElement(element) {
@@ -1732,6 +1734,21 @@
         state.selectedTileId = state.selectedTileId === tileId ? null : tileId;
         state.activeTileId = tileId;
         renderWorkspace();
+      }
+
+      function nudgeTile(tileId, dx, dy) {
+        const tile = getWorkspaceTile(tileId);
+        if (!tile) return;
+        const pos = clampTilePosition(tile.x + dx, tile.y + dy);
+        tile.x = pos.x;
+        tile.y = pos.y;
+        state.activeTileId = tile.id;
+        saveState();
+        renderWorkspace();
+        const focusedTile = desk.querySelector('.tile[data-tile-id="' + tileId + '"]');
+        if (focusedTile) {
+          focusedTile.focus();
+        }
       }
 
       function combineTilesIntoResult(firstTile, secondTile, resultId) {
@@ -2149,7 +2166,18 @@
             event.preventDefault();
             openInfo(focusedElement.dataset.itemId, focusedElement);
           }
-          if ((event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'ArrowRight' || event.key === 'ArrowDown') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('tile')) {
+          if (event.shiftKey && (event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'ArrowRight' || event.key === 'ArrowDown') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('tile')) {
+            event.preventDefault();
+            const moveStep = 24;
+            const deltas = {
+              ArrowLeft: [-moveStep, 0],
+              ArrowRight: [moveStep, 0],
+              ArrowUp: [0, -moveStep],
+              ArrowDown: [0, moveStep]
+            };
+            const [dx, dy] = deltas[event.key];
+            nudgeTile(Number(focusedElement.dataset.tileId), dx, dy);
+          } else if ((event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'ArrowRight' || event.key === 'ArrowDown') && focusedElement instanceof HTMLElement && focusedElement.classList.contains('tile')) {
             event.preventDefault();
             const tiles = [...desk.querySelectorAll('.tile')];
             const currentIndex = tiles.indexOf(focusedElement);
