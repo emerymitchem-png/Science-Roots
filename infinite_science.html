@@ -604,7 +604,7 @@
         </div>
       </header>
       <div class="desk-wrap">
-        <div class="desk" id="desk" aria-label="Workspace desk">
+        <div class="desk" id="desk" tabindex="0" aria-label="Workspace desk">
           <div class="desk-empty" id="deskEmptyHint">Start by dragging a science from the inventory onto the desk.<br />Click any tile to read its note. Press <strong>Shift + A</strong> to rerun the development audit.</div>
           <div class="trash-zone" id="trashZone" aria-hidden="true">
             <div>
@@ -1580,8 +1580,16 @@
           .filter((el) => !el.disabled && el.getAttribute('aria-hidden') !== 'true' && !el.closest('.hidden'));
       }
 
+      function getOpenBackdrop() {
+        return [infoBackdrop, collectionBackdrop, rootsBackdrop].find((node) => node.classList.contains('open')) || null;
+      }
+
       function openBackdrop(backdrop, initialFocusEl) {
-        if (![infoBackdrop, collectionBackdrop, rootsBackdrop].some((node) => node.classList.contains('open'))) {
+        const openBackdropNode = getOpenBackdrop();
+        if (openBackdropNode && openBackdropNode !== backdrop) {
+          closeBackdrop(openBackdropNode, { restoreFocus: false });
+        }
+        if (!getOpenBackdrop()) {
           modalState.lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         }
         appShell.inert = true;
@@ -1596,16 +1604,17 @@
         }
       }
 
-      function closeBackdrop(backdrop) {
+      function closeBackdrop(backdrop, options = {}) {
+        const { restoreFocus = true } = options;
         const wasOpen = backdrop.classList.contains('open');
         backdrop.classList.remove('open');
         backdrop.setAttribute('aria-hidden', 'true');
         backdrop.hidden = true;
-        if (![infoBackdrop, collectionBackdrop, rootsBackdrop].some((node) => node.classList.contains('open'))) {
+        if (!getOpenBackdrop()) {
           appShell.inert = false;
           appShell.removeAttribute('aria-hidden');
           document.body.style.overflow = '';
-          if (wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
+          if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
           }
           modalState.lastFocused = null;
@@ -1959,7 +1968,7 @@
         });
 
         document.addEventListener('keydown', (event) => {
-          const activeBackdrop = [infoBackdrop, collectionBackdrop, rootsBackdrop].find((node) => node.classList.contains('open'));
+          const activeBackdrop = getOpenBackdrop();
           if (activeBackdrop && event.key === 'Tab') {
             const focusables = getFocusableElements(activeBackdrop);
             if (focusables.length) {
@@ -1975,12 +1984,23 @@
             }
           }
           if (event.key === 'Escape') {
-            closeInfo();
-            closeCollection();
-            closeRoots();
+            if (activeBackdrop) {
+              closeBackdrop(activeBackdrop);
+              return;
+            }
           }
           if (activeBackdrop) {
             return;
+          }
+          if ((event.key === 'Enter' || event.key === ' ') && document.activeElement === desk) {
+            event.preventDefault();
+            const firstTile = desk.querySelector('.tile');
+            const firstInventory = inventoryList.querySelector('.inventory-row');
+            if (firstTile) {
+              firstTile.focus();
+            } else if (firstInventory) {
+              firstInventory.focus();
+            }
           }
           if (event.shiftKey && (event.key === 'A' || event.key === 'a')) {
             const audit = runAudit(true);
