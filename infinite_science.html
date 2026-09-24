@@ -1227,13 +1227,25 @@
             state.discovered = new Set([...STARTING_ITEM_IDS, ...safeIds]);
           }
           if (Array.isArray(parsed.workspace)) {
+            const usedTileIds = new Set();
+            let repairedTileId = 1;
             state.workspace = parsed.workspace
               .filter((tile) => tile && CATALOG[tile.itemId])
               .map((tile) => {
                 const safeX = Number.isFinite(Number(tile.x)) ? Number(tile.x) : 0;
                 const safeY = Number.isFinite(Number(tile.y)) ? Number(tile.y) : 0;
+                const numericId = Number(tile.id);
+                let safeId = Number.isFinite(numericId) ? numericId : null;
+                if (safeId === null || usedTileIds.has(safeId)) {
+                  while (usedTileIds.has(repairedTileId)) {
+                    repairedTileId += 1;
+                  }
+                  safeId = repairedTileId;
+                  repairedTileId += 1;
+                }
+                usedTileIds.add(safeId);
                 return {
-                  id: Number.isFinite(Number(tile.id)) ? Number(tile.id) : state.nextTileId++,
+                  id: safeId,
                   itemId: tile.itemId,
                   x: safeX,
                   y: safeY,
@@ -1597,7 +1609,12 @@
       }
 
       function supportsInert() {
-        return 'inert' in appShell;
+        return typeof HTMLElement !== 'undefined' && 'inert' in HTMLElement.prototype;
+      }
+
+      function pointerIsInsideDesk(clientX, clientY) {
+        const rect = desk.getBoundingClientRect();
+        return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
       }
 
       function setBackgroundModalState(disabled) {
@@ -1860,6 +1877,9 @@
           const dx = pointerEvent.clientX - state.drag.startX;
           const dy = pointerEvent.clientY - state.drag.startY;
           if (Math.hypot(dx, dy) <= 6) {
+            return;
+          }
+          if (!pointerIsInsideDesk(pointerEvent.clientX, pointerEvent.clientY)) {
             return;
           }
           const deskRect = desk.getBoundingClientRect();
