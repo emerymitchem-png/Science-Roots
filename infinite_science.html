@@ -1006,8 +1006,6 @@
         zCounter: 1,
         search: '',
         activeInfoId: null,
-        collectionOpen: false,
-        rootsOpen: false,
         drag: null,
         lastAudit: null,
         selectedTileId: null,
@@ -1901,6 +1899,7 @@
       function finishDrag(pointerEvent) {
         if (!state.drag) return;
         const drag = state.drag;
+        state.drag = null;
         const draggedTile = getWorkspaceTile(drag.tileId);
         const wasClick = !drag.moved;
         const targetTile = drag.targetTileId ? getWorkspaceTile(drag.targetTileId) : null;
@@ -1920,11 +1919,9 @@
 
         if (!draggedTile) {
           if (drag.source === 'inventory' && !drag.moved) {
-            state.drag = null;
             openInfo(drag.itemId, drag.pointerCapturedBy);
             return;
           }
-          state.drag = null;
           renderWorkspace();
           return;
         }
@@ -1938,20 +1935,17 @@
             saveState();
             renderWorkspace();
           }
-          state.drag = null;
           return;
         }
 
         if (onTrash) {
           removeWorkspaceTile(drag.tileId);
           pushToast('Discarded', CATALOG[drag.itemId].label + ' was removed from the desk.', 'warn');
-          state.drag = null;
           return;
         }
 
         if (targetTile) {
           if (recipe) {
-            state.drag = null;
             combineTilesIntoResult(draggedTile, targetTile, recipe.result);
             return;
           }
@@ -1960,7 +1954,6 @@
 
         saveState();
         renderWorkspace();
-        state.drag = null;
       }
 
       function renderAll() {
