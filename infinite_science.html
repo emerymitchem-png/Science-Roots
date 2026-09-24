@@ -1,0 +1,2240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Infinite Science</title>
+  <style>
+    :root {
+      --paper: #f7f4ea;
+      --paper-deep: #efe7d5;
+      --ink: #22303b;
+      --muted: #58626e;
+      --accent: #3a6ea5;
+      --accent-soft: #d8e6f6;
+      --accent-strong: #214f7c;
+      --success: #2f7a49;
+      --success-soft: #dff3e6;
+      --warn: #9a6129;
+      --warn-soft: #f7e3cf;
+      --danger: #9a3c3c;
+      --danger-soft: #f8d9d9;
+      --shadow: 0 12px 28px rgba(34, 48, 59, 0.14);
+      --tile-shadow: 0 10px 20px rgba(34, 48, 59, 0.12);
+      --border: rgba(34, 48, 59, 0.14);
+      --grid: rgba(58, 110, 165, 0.08);
+      --sidebar-width: min(340px, 34vw);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top, #fffef8 0%, #f8f5ea 45%, #efe7d5 100%);
+      color: var(--ink);
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1fr var(--sidebar-width);
+      height: 100vh;
+    }
+
+    .workspace-shell {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-width: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.54), rgba(255,255,255,0.28)),
+        repeating-linear-gradient(0deg, transparent 0, transparent 31px, var(--grid) 31px, var(--grid) 32px),
+        repeating-linear-gradient(90deg, transparent 0, transparent 31px, var(--grid) 31px, var(--grid) 32px);
+      position: relative;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(10px);
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: 0.01em;
+    }
+
+    .title-block p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .toolbar button,
+    .panel-actions button,
+    .inventory-row,
+    .modal button,
+    .sheet button,
+    .info-button {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.92);
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      box-shadow: 0 2px 6px rgba(34, 48, 59, 0.06);
+    }
+
+    .toolbar button:hover,
+    .panel-actions button:hover,
+    .inventory-row:hover,
+    .modal button:hover,
+    .sheet button:hover,
+    .info-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(58, 110, 165, 0.4);
+      box-shadow: 0 8px 18px rgba(34, 48, 59, 0.08);
+    }
+
+    .toolbar button:focus-visible,
+    .panel-actions button:focus-visible,
+    .inventory-row:focus-visible,
+    .modal button:focus-visible,
+    .sheet button:focus-visible,
+    .info-button:focus-visible,
+    .desk:focus-visible,
+    .inventory-search input:focus-visible {
+      outline: 3px solid rgba(58, 110, 165, 0.35);
+      outline-offset: 2px;
+    }
+
+    .toolbar .danger,
+    .reset-button {
+      border-color: rgba(154, 60, 60, 0.26);
+      background: var(--danger-soft);
+      color: #742d2d;
+    }
+
+    .desk-wrap {
+      position: relative;
+      min-height: 0;
+      padding: 18px 18px 22px;
+    }
+
+    .desk {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 420px;
+      border-radius: 22px;
+      border: 1px dashed rgba(58, 110, 165, 0.28);
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.72), rgba(255,255,255,0.38)),
+        linear-gradient(180deg, rgba(247, 244, 234, 0.7), rgba(239, 231, 213, 0.92));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--shadow);
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .desk-empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      color: var(--muted);
+      text-align: center;
+      padding: 24px;
+      font-size: 1rem;
+    }
+
+    .tile {
+      position: absolute;
+      min-width: 124px;
+      max-width: 180px;
+      padding: 12px 14px 11px;
+      border-radius: 16px;
+      border: 1px solid rgba(58, 110, 165, 0.18);
+      background: rgba(255,255,255,0.96);
+      box-shadow: var(--tile-shadow);
+      user-select: none;
+      touch-action: none;
+      cursor: grab;
+      transition: transform 100ms ease, box-shadow 100ms ease, border-color 100ms ease, background 100ms ease;
+    }
+
+    .tile:active { cursor: grabbing; }
+
+    .tile.dragging {
+      box-shadow: 0 18px 28px rgba(34, 48, 59, 0.2);
+      transform: scale(1.02);
+      z-index: 999;
+    }
+
+    .tile.combine-target {
+      border-color: rgba(47, 122, 73, 0.72);
+      background: linear-gradient(180deg, rgba(223,243,230,0.92), rgba(255,255,255,0.98));
+      box-shadow: 0 0 0 3px rgba(47, 122, 73, 0.14), var(--tile-shadow);
+    }
+
+    .tile.combine-blocked {
+      border-color: rgba(154, 97, 41, 0.5);
+      background: linear-gradient(180deg, rgba(247,227,207,0.88), rgba(255,255,255,0.98));
+    }
+
+    .tile.keyboard-selected {
+      border-color: rgba(58, 110, 165, 0.7);
+      box-shadow: 0 0 0 3px rgba(58, 110, 165, 0.16), var(--tile-shadow);
+    }
+
+    .tile-label {
+      font-weight: 700;
+      font-size: 0.98rem;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .tile-meta,
+    .chip-row,
+    .inventory-caption,
+    .info-meta,
+    .mini-note,
+    .audit-note,
+    .modal p,
+    .list-note,
+    .inventory-counter {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(58, 110, 165, 0.18);
+      background: rgba(216, 230, 246, 0.5);
+      padding: 3px 8px;
+      font-size: 0.72rem;
+      color: var(--accent-strong);
+    }
+
+    .chip.type-root_built {
+      background: rgba(223, 243, 230, 0.85);
+      color: var(--success);
+      border-color: rgba(47, 122, 73, 0.22);
+    }
+
+    .chip.type-field {
+      background: rgba(216, 230, 246, 0.85);
+    }
+
+    .chip.type-concept {
+      background: rgba(247, 227, 207, 0.72);
+      color: var(--warn);
+      border-color: rgba(154, 97, 41, 0.18);
+    }
+
+    .trash-zone {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      width: 120px;
+      min-height: 88px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border-radius: 18px;
+      border: 2px dashed rgba(154, 60, 60, 0.36);
+      background: rgba(248, 217, 217, 0.42);
+      color: #7d3838;
+      pointer-events: none;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    .trash-zone.active {
+      transform: scale(1.02);
+      background: rgba(248, 217, 217, 0.9);
+      border-color: rgba(154, 60, 60, 0.72);
+      box-shadow: 0 0 0 4px rgba(154, 60, 60, 0.12);
+    }
+
+    .inventory {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      min-width: 0;
+      border-left: 1px solid var(--border);
+      background: rgba(255,255,255,0.84);
+      backdrop-filter: blur(10px);
+    }
+
+    .inventory-header {
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .inventory-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .inventory-header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .inventory-search {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .inventory-search input {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(58, 110, 165, 0.24);
+      padding: 11px 12px;
+      background: rgba(255,255,255,0.98);
+    }
+
+    .inventory-list {
+      overflow: auto;
+      padding: 14px 18px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .inventory-row {
+      width: 100%;
+      text-align: left;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .inventory-main {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .inventory-name {
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .inventory-caption {
+      margin-top: 4px;
+    }
+
+    .inventory-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+      align-items: flex-start;
+      flex-shrink: 0;
+    }
+
+    .status-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .status-card {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.76);
+      padding: 10px 12px;
+      min-width: 118px;
+    }
+
+    .status-card strong {
+      display: block;
+      font-size: 1.1rem;
+      line-height: 1.1;
+    }
+
+    .toast-stack {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1200;
+      pointer-events: none;
+    }
+
+    .toast {
+      min-width: 260px;
+      max-width: min(420px, calc(100vw - 36px));
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.97);
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      animation: toast-in 220ms ease;
+    }
+
+    .toast.success {
+      border-color: rgba(47, 122, 73, 0.24);
+      background: linear-gradient(180deg, rgba(223,243,230,0.92), rgba(255,255,255,0.98));
+    }
+
+    .toast.warn {
+      border-color: rgba(154, 97, 41, 0.28);
+      background: linear-gradient(180deg, rgba(247,227,207,0.9), rgba(255,255,255,0.98));
+    }
+
+    .toast-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-backdrop,
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(28, 35, 41, 0.35);
+      z-index: 1100;
+      padding: 18px;
+    }
+
+    .modal-backdrop.open,
+    .sheet-backdrop.open {
+      display: flex;
+    }
+
+    .modal,
+    .sheet {
+      width: min(760px, 100%);
+      max-height: min(86vh, 900px);
+      overflow: auto;
+      border-radius: 22px;
+      border: 1px solid rgba(58, 110, 165, 0.16);
+      background: rgba(255,255,255,0.98);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .sheet {
+      width: min(540px, 100%);
+      align-self: stretch;
+      margin-left: auto;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .panel-head h3 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .panel-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .panel-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .collection-grid,
+    .root-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,244,234,0.7));
+    }
+
+    .card h4 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .card.locked {
+      opacity: 0.6;
+      filter: saturate(0.65);
+    }
+
+    .info-section {
+      margin-top: 16px;
+    }
+
+    .info-section h4 {
+      margin: 0 0 8px;
+      font-size: 0.96rem;
+    }
+
+    .info-section p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .root-rules {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .rule {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(247,244,234,0.72);
+      font-size: 0.9rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1040px) {
+      .app {
+        grid-template-columns: 1fr 310px;
+      }
+      .toolbar {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(65vh, 1fr) auto;
+        height: auto;
+        min-height: 100vh;
+      }
+      .inventory {
+        min-height: 42vh;
+        border-left: 0;
+        border-top: 1px solid var(--border);
+      }
+      .desk {
+        min-height: 62vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="workspace-shell" aria-label="Workspace area">
+      <header class="topbar">
+        <div class="title-block">
+          <h1>Infinite Science</h1>
+          <p>Drag discoveries onto the desk, overlap tiles to test combinations, and build a library of scientific ideas.</p>
+        </div>
+        <div class="toolbar">
+          <button id="openCollectionButton" type="button">Collection</button>
+          <button id="openRootsButton" type="button">Root Library</button>
+          <button id="clearDeskButton" type="button">Clear Desk</button>
+          <button id="resetGameButton" class="danger reset-button" type="button">Reset Game</button>
+        </div>
+      </header>
+      <div class="desk-wrap">
+        <div class="desk" id="desk" tabindex="0" aria-label="Workspace desk">
+          <div class="desk-empty" id="deskEmptyHint">Start by dragging a science from the inventory onto the desk.<br />Click any tile to read its note. Press <strong>Shift + A</strong> to rerun the development audit.</div>
+          <div class="trash-zone" id="trashZone" aria-hidden="true">
+            <div>
+              <strong>Trash</strong><br />Drop here to discard
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="inventory" aria-label="Permanent inventory">
+      <div class="inventory-header">
+        <h2>Inventory</h2>
+        <p>Permanent discoveries stay here. Drag copies onto the desk whenever you need them.</p>
+        <div class="status-bar" id="statusBar"></div>
+      </div>
+      <div class="inventory-search">
+        <label class="hidden" for="inventorySearch">Search discoveries</label>
+        <input id="inventorySearch" type="search" placeholder="Search discoveries, roots, or topics" autocomplete="off" />
+      </div>
+      <div class="inventory-list" id="inventoryList" role="list"></div>
+    </aside>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
+
+  <div class="modal-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
+    <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" aria-hidden="true" role="dialog" tabindex="-1" hidden>
+      <div class="panel-head">
+        <div>
+          <h3 id="infoTitle">Discovery</h3>
+          <p id="infoSubtitle">Scientific note</p>
+        </div>
+        <div class="panel-actions">
+          <button id="closeInfoButton" type="button" aria-label="Close information panel">Close</button>
+        </div>
+      </div>
+      <div class="chip-row" id="infoChips"></div>
+      <div class="info-section">
+        <h4>Description</h4>
+        <p id="infoDescription"></p>
+      </div>
+      <div class="info-section">
+        <h4>How it fits</h4>
+        <p id="infoRootNote"></p>
+      </div>
+      <div class="info-section" id="infoActivitySection" hidden>
+        <h4>What scientists do</h4>
+        <p id="infoActivity"></p>
+      </div>
+      <div class="info-section">
+        <h4>Known recipes</h4>
+        <div id="infoRecipes"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" hidden>
+    <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" aria-hidden="true" role="dialog" tabindex="-1" hidden>
+      <div class="panel-head">
+        <div>
+          <h3 id="collectionTitle">Collection</h3>
+          <p id="collectionSubtitle">Everything you have unlocked so far, grouped in a compact notebook view.</p>
+        </div>
+        <div class="panel-actions">
+          <button id="closeCollectionButton" type="button" aria-label="Close collection panel">Close</button>
+        </div>
+      </div>
+      <div class="collection-grid" id="collectionGrid"></div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" hidden>
+    <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" aria-hidden="true" role="dialog" tabindex="-1" hidden>
+      <div class="panel-head">
+        <div>
+          <h3 id="rootsTitle">Root Library</h3>
+          <p id="rootsSubtitle">Root-built specialties use exactly one core subject plus approved modifier roots.</p>
+        </div>
+        <div class="panel-actions">
+          <button id="closeRootsButton" type="button" aria-label="Close root library panel">Close</button>
+        </div>
+      </div>
+      <div class="root-rules" id="rootRules"></div>
+      <div class="root-grid" id="rootGrid"></div>
+    </section>
+  </div>
+
+  <script>
+    'use strict';
+
+    (function () {
+      const STORAGE_KEY = 'infinite-science-save-v1';
+      const TILE_W = 152;
+      const TILE_H = 88;
+      const MAX_TOASTS = 4;
+      const MAX_ROOT_MODIFIERS = 4;
+      const STARTING_ITEM_IDS = ['biology', 'physics', 'chemistry', 'earth_science', 'astronomy'];
+      const STARTING_SET = new Set(STARTING_ITEM_IDS);
+
+      const ITEM_DEFS = [
+        { id: 'biology', label: 'Biology', type: 'field', group: 'Starting Science', description: 'The study of living systems, from cells to ecosystems.' },
+        { id: 'physics', label: 'Physics', type: 'field', group: 'Starting Science', description: 'The study of matter, energy, motion, and physical laws.' },
+        { id: 'chemistry', label: 'Chemistry', type: 'field', group: 'Starting Science', description: 'The study of substances, structure, reactions, and transformation.' },
+        { id: 'earth_science', label: 'Earth Science', type: 'field', group: 'Starting Science', description: 'The study of Earth systems, landscapes, climate, and geologic change.' },
+        { id: 'astronomy', label: 'Astronomy', type: 'field', group: 'Starting Science', description: 'The study of planets, stars, space, and the wider cosmos.' },
+
+        { id: 'scale', label: 'Scale', type: 'concept', group: 'Scientific Practice', description: 'The idea that science compares phenomena across size, distance, and duration.' },
+        { id: 'molecule', label: 'Molecule', type: 'concept', group: 'Life & Matter', description: 'A set of atoms bonded into a discrete chemical unit.' },
+        { id: 'habitat', label: 'Habitat', type: 'concept', group: 'Life & Earth', description: 'An environment that provides the conditions an organism needs to live.' },
+        { id: 'habitability', label: 'Habitability', type: 'concept', group: 'Space Science', description: 'The capacity of an environment to support stable living conditions.' },
+        { id: 'matter', label: 'Matter', type: 'concept', group: 'Physical Science', description: 'Anything with mass and volume.' },
+        { id: 'motion', label: 'Motion', type: 'concept', group: 'Physical Science', description: 'Change in position over time.' },
+        { id: 'gravity', label: 'Gravity', type: 'concept', group: 'Physical Science', description: 'The attraction between masses that shapes motion and structure in the universe.' },
+        { id: 'mineral', label: 'Mineral', type: 'concept', group: 'Earth Science', description: 'A naturally occurring solid with a characteristic chemical composition and structure.' },
+        { id: 'spectrum', label: 'Spectrum', type: 'concept', group: 'Space Science', description: 'A spread of wavelengths that can reveal composition, motion, and energy.' },
+        { id: 'planet', label: 'Planet', type: 'concept', group: 'Space Science', description: 'A large world orbiting a star or stellar remnant.' },
+
+        { id: 'microscopic', label: 'Microscopic', type: 'concept', group: 'Modifier Root', description: 'A scale small enough to require magnification for direct observation.' },
+        { id: 'atom', label: 'Atom', type: 'concept', group: 'Physical Science', description: 'A basic unit of matter made of a nucleus and electrons.' },
+        { id: 'element', label: 'Element', type: 'concept', group: 'Physical Science', description: 'A pure substance defined by atoms with the same number of protons.' },
+        { id: 'compound', label: 'Compound', type: 'concept', group: 'Chemistry', description: 'A substance made from atoms of different elements joined in fixed ratios.' },
+        { id: 'charge', label: 'Charge', type: 'concept', group: 'Physical Science', description: 'An electrical property that influences attraction, repulsion, and current.' },
+        { id: 'energy', label: 'Energy', type: 'concept', group: 'Physical Science', description: 'The capacity to do work or cause change.' },
+        { id: 'heat', label: 'Heat', type: 'concept', group: 'Physical Science', description: 'Thermal energy transferred because of a temperature difference.' },
+        { id: 'light', label: 'Light', type: 'concept', group: 'Physical Science', description: 'Visible electromagnetic radiation and a major scientific source of information.' },
+        { id: 'wave', label: 'Wave', type: 'concept', group: 'Physical Science', description: 'A repeating disturbance that transfers energy through space or matter.' },
+        { id: 'sound', label: 'Sound', type: 'concept', group: 'Physical Science', description: 'A wave produced by vibrating matter and heard or measured as pressure variation.' },
+        { id: 'orbit', label: 'Orbit', type: 'concept', group: 'Space Science', description: 'A repeated path around a massive body.' },
+        { id: 'time', label: 'Time', type: 'concept', group: 'Scientific Practice', description: 'A measured duration used to compare change, cycles, and rates.' },
+        { id: 'season', label: 'Season', type: 'concept', group: 'Earth Science', description: 'A recurring interval shaped by orbital geometry and changing sunlight.' },
+        { id: 'observation', label: 'Observation', type: 'concept', group: 'Scientific Practice', description: 'Careful noticing and recording of evidence from the world.' },
+        { id: 'measurement', label: 'Measurement', type: 'concept', group: 'Scientific Practice', description: 'Quantifying a property with a scale or standard.' },
+        { id: 'data', label: 'Data', type: 'concept', group: 'Scientific Practice', description: 'Recorded observations and measurements used for analysis.' },
+        { id: 'experiment', label: 'Experiment', type: 'concept', group: 'Scientific Practice', description: 'A controlled test used to investigate cause and effect.' },
+        { id: 'model', label: 'Model', type: 'concept', group: 'Scientific Practice', description: 'A simplified representation used to explain or predict a system.' },
+        { id: 'evidence', label: 'Evidence', type: 'concept', group: 'Scientific Practice', description: 'Data interpreted in a way that supports or challenges an explanation.' },
+        { id: 'prediction', label: 'Prediction', type: 'concept', group: 'Scientific Practice', description: 'A forecast about what should happen if an explanation is accurate.' },
+        { id: 'simulation', label: 'Simulation', type: 'concept', group: 'Scientific Practice', description: 'A model run through time or conditions to explore possible outcomes.' },
+        { id: 'variable', label: 'Variable', type: 'concept', group: 'Scientific Practice', description: 'A factor that can change within an investigation.' },
+        { id: 'system', label: 'System', type: 'concept', group: 'Scientific Practice', description: 'A set of interacting parts whose behavior depends on their relationships.' },
+        { id: 'sampling', label: 'Sampling', type: 'concept', group: 'Scientific Practice', description: 'Collecting a representative subset to study a larger whole.' },
+        { id: 'experimental', label: 'Experimental', type: 'concept', group: 'Modifier Root', description: 'Focused on testing ideas through deliberate intervention and control.' },
+        { id: 'observational', label: 'Observational', type: 'concept', group: 'Modifier Root', description: 'Focused on gathering information by watching systems as they are.' },
+        { id: 'computational', label: 'Computational', type: 'concept', group: 'Modifier Root', description: 'Focused on using calculation and algorithms to analyze or simulate systems.' },
+
+        { id: 'cell', label: 'Cell', type: 'concept', group: 'Life Science', description: 'The basic structural and functional unit of life.' },
+        { id: 'organism', label: 'Organism', type: 'concept', group: 'Life Science', description: 'An individual living thing.' },
+        { id: 'tissue', label: 'Tissue', type: 'concept', group: 'Life Science', description: 'A group of similar cells working together in an organism.' },
+        { id: 'dna', label: 'DNA', type: 'concept', group: 'Life Science', description: 'A molecule that stores hereditary information in most living organisms.' },
+        { id: 'inheritance', label: 'Inheritance', type: 'concept', group: 'Life Science', description: 'The passing of traits from one generation to the next.' },
+        { id: 'gene', label: 'Gene', type: 'concept', group: 'Life Science', description: 'A segment of DNA associated with a trait or function.' },
+        { id: 'mutation', label: 'Mutation', type: 'concept', group: 'Life Science', description: 'A change in genetic sequence.' },
+        { id: 'adaptation', label: 'Adaptation', type: 'concept', group: 'Life Science', description: 'A trait or process that improves survival in a particular environment.' },
+        { id: 'species', label: 'Species', type: 'concept', group: 'Life Science', description: 'A group of organisms that share a common evolutionary identity.' },
+        { id: 'population', label: 'Population', type: 'concept', group: 'Life Science', description: 'Members of the same species living in the same area.' },
+        { id: 'ecosystem', label: 'Ecosystem', type: 'concept', group: 'Ecology', description: 'A community of organisms interacting with their physical environment.' },
+        { id: 'biodiversity', label: 'Biodiversity', type: 'concept', group: 'Ecology', description: 'The variety of life across genes, species, and ecosystems.' },
+        { id: 'food_web', label: 'Food Web', type: 'concept', group: 'Ecology', description: 'A network of feeding relationships among organisms.' },
+        { id: 'niche', label: 'Niche', type: 'concept', group: 'Ecology', description: 'The role and set of conditions through which a species persists.' },
+        { id: 'enzyme', label: 'Enzyme', type: 'concept', group: 'Life Science', description: 'A biological catalyst that speeds up specific chemical reactions.' },
+        { id: 'metabolism', label: 'Metabolism', type: 'concept', group: 'Life Science', description: 'The web of chemical reactions that sustains life.' },
+        { id: 'photosynthesis', label: 'Photosynthesis', type: 'concept', group: 'Life Science', description: 'A process that captures light energy to build chemical energy.' },
+        { id: 'respiration', label: 'Respiration', type: 'concept', group: 'Life Science', description: 'A process that releases usable energy from chemical stores.' },
+        { id: 'symbiosis', label: 'Symbiosis', type: 'concept', group: 'Ecology', description: 'A close biological relationship between different species.' },
+        { id: 'genetic', label: 'Genetic', type: 'concept', group: 'Modifier Root', description: 'Focused on heredity, genes, and inherited variation.' },
+        { id: 'ecological', label: 'Ecological', type: 'concept', group: 'Modifier Root', description: 'Focused on interactions among organisms and environments.' },
+
+        { id: 'water', label: 'Water', type: 'concept', group: 'Earth Science', description: 'A molecule and medium essential to climate, geology, and life.' },
+        { id: 'atmosphere', label: 'Atmosphere', type: 'concept', group: 'Earth Science', description: 'A layer of gases surrounding a planet.' },
+        { id: 'cloud', label: 'Cloud', type: 'concept', group: 'Earth Science', description: 'A visible mass of condensed droplets or ice in the atmosphere.' },
+        { id: 'weather', label: 'Weather', type: 'concept', group: 'Earth Science', description: 'Short-term atmospheric conditions in a place.' },
+        { id: 'climate', label: 'Climate', type: 'concept', group: 'Earth Science', description: 'Long-term patterns of weather over time.' },
+        { id: 'ocean', label: 'Ocean', type: 'concept', group: 'Earth Science', description: 'A major connected body of salt water on a planet.' },
+        { id: 'current', label: 'Current', type: 'concept', group: 'Earth Science', description: 'A directed flow through ocean, air, or another medium.' },
+        { id: 'circulation', label: 'Circulation', type: 'concept', group: 'Earth Science', description: 'Large-scale flow that redistributes heat and material through a system.' },
+        { id: 'rock', label: 'Rock', type: 'concept', group: 'Earth Science', description: 'A naturally occurring solid aggregate of minerals.' },
+        { id: 'surface', label: 'Surface', type: 'concept', group: 'Earth Science', description: 'The outer interface where landscapes, water, and atmosphere meet.' },
+        { id: 'erosion', label: 'Erosion', type: 'concept', group: 'Earth Science', description: 'The wearing away and transport of material at a surface.' },
+        { id: 'sediment', label: 'Sediment', type: 'concept', group: 'Earth Science', description: 'Particles deposited by water, wind, ice, or gravity.' },
+        { id: 'fossil', label: 'Fossil', type: 'concept', group: 'Earth Science', description: 'Preserved remains, traces, or records of ancient life.' },
+        { id: 'tectonics', label: 'Tectonics', type: 'concept', group: 'Earth Science', description: 'Large-scale deformation and movement of a planet’s outer shell.' },
+        { id: 'volcano', label: 'Volcano', type: 'concept', group: 'Earth Science', description: 'A vent or landform where magma reaches the surface.' },
+        { id: 'earthquake', label: 'Earthquake', type: 'concept', group: 'Earth Science', description: 'A release of energy that shakes the ground.' },
+        { id: 'ancient', label: 'Ancient', type: 'concept', group: 'Modifier Root', description: 'Rooted in deep time and long-past conditions.' },
+        { id: 'earth_context', label: 'Earth Context', type: 'concept', group: 'Modifier Root', description: 'Framed by rocks, sediments, soils, and other geologic settings on Earth.' },
+        { id: 'cycle', label: 'Cycle', type: 'concept', group: 'Earth Science', description: 'A repeating pathway that moves matter or energy through a system.' },
+        { id: 'feedback', label: 'Feedback', type: 'concept', group: 'Scientific Practice', description: 'A response within a system that amplifies or reduces later change.' },
+        { id: 'crater', label: 'Crater', type: 'concept', group: 'Space Science', description: 'A circular depression made by impact or collapse.' },
+        { id: 'marine', label: 'Marine', type: 'concept', group: 'Modifier Root', description: 'Focused on ocean environments and sea-based systems.' },
+        { id: 'atmospheric', label: 'Atmospheric', type: 'concept', group: 'Modifier Root', description: 'Focused on gaseous envelopes, weather, and climate processes.' },
+
+        { id: 'star', label: 'Star', type: 'concept', group: 'Space Science', description: 'A luminous ball of plasma powered by internal energy generation.' },
+        { id: 'solar_system', label: 'Solar System', type: 'concept', group: 'Space Science', description: 'A star and the objects bound to it by gravity.' },
+        { id: 'exoplanet', label: 'Exoplanet', type: 'concept', group: 'Space Science', description: 'A planet that orbits a star beyond our solar system.' },
+        { id: 'transit', label: 'Transit', type: 'concept', group: 'Space Science', description: 'A passage in which one body crosses in front of another from an observer’s view.' },
+        { id: 'biosignature', label: 'Biosignature', type: 'concept', group: 'Space Science', description: 'A pattern or substance that may indicate life.' },
+        { id: 'stellar', label: 'Stellar', type: 'concept', group: 'Modifier Root', description: 'Focused on stars and star-driven processes.' },
+        { id: 'radiation', label: 'Radiation', type: 'concept', group: 'Space Science', description: 'Energy emitted and transferred as waves or particles.' },
+        { id: 'cosmic_dust', label: 'Cosmic Dust', type: 'concept', group: 'Space Science', description: 'Fine solid particles dispersed through space.' },
+        { id: 'exoplanetary', label: 'Exoplanetary', type: 'concept', group: 'Modifier Root', description: 'Focused on worlds beyond our solar system.' },
+
+        { id: 'machine', label: 'Machine', type: 'concept', group: 'Engineering', description: 'A device or assembly designed to perform useful work.' },
+        { id: 'sensor', label: 'Sensor', type: 'concept', group: 'Engineering', description: 'A tool that detects or measures a property.' },
+        { id: 'instrument', label: 'Instrument', type: 'concept', group: 'Engineering', description: 'A purpose-built scientific tool for measurement or observation.' },
+        { id: 'engine', label: 'Engine', type: 'concept', group: 'Engineering', description: 'A machine that converts stored energy into motion.' },
+        { id: 'vehicle', label: 'Vehicle', type: 'concept', group: 'Engineering', description: 'A machine built to move through a medium or across terrain.' },
+        { id: 'rocket', label: 'Rocket', type: 'concept', group: 'Engineering', description: 'A vehicle propelled by expelling mass at high speed.' },
+        { id: 'metal', label: 'Metal', type: 'concept', group: 'Engineering', description: 'A class of materials often valued for strength, conductivity, and workability.' },
+        { id: 'electricity', label: 'Electricity', type: 'concept', group: 'Physical Science', description: 'The behavior and flow of electric charge.' },
+        { id: 'circuit', label: 'Circuit', type: 'concept', group: 'Engineering', description: 'A closed path through which current can travel.' },
+        { id: 'computer', label: 'Computer', type: 'concept', group: 'Engineering', description: 'A machine that processes information according to instructions.' },
+        { id: 'algorithm', label: 'Algorithm', type: 'concept', group: 'Engineering', description: 'A structured set of steps for solving a problem or processing data.' },
+        { id: 'microscope', label: 'Microscope', type: 'concept', group: 'Engineering', description: 'An instrument that magnifies very small objects or details.' },
+        { id: 'spectrometer', label: 'Spectrometer', type: 'concept', group: 'Engineering', description: 'An instrument that measures and separates light by wavelength.' },
+        { id: 'telescope', label: 'Telescope', type: 'concept', group: 'Engineering', description: 'An instrument that gathers light or other radiation from distant objects.' },
+        { id: 'pressure', label: 'Pressure', type: 'concept', group: 'Physical Science', description: 'Force distributed over an area.' },
+        { id: 'temperature', label: 'Temperature', type: 'concept', group: 'Physical Science', description: 'A measure related to average thermal energy.' },
+        { id: 'phase_change', label: 'Phase Change', type: 'concept', group: 'Physical Science', description: 'A change between solid, liquid, gas, or plasma states.' },
+        { id: 'magnetism', label: 'Magnetism', type: 'concept', group: 'Physical Science', description: 'A phenomenon arising from moving charges and magnetic fields.' },
+        { id: 'vibration', label: 'Vibration', type: 'concept', group: 'Physical Science', description: 'A repeated back-and-forth motion around an equilibrium state.' },
+
+        { id: 'biochemistry', label: 'Biochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies the chemical substances and reactions of living systems.', roots: ['biology', 'chemistry'], activity: 'Biochemists measure enzymes, proteins, and metabolic pathways to explain how cells store energy and build structures.' },
+        { id: 'biophysics', label: 'Biophysics', type: 'field', group: 'Interdisciplinary Field', description: 'The field that uses physical principles and tools to study living systems.', roots: ['biology', 'physics'], activity: 'Biophysicists model how membranes, biomolecules, and molecular machines move, fold, and transfer energy.' },
+        { id: 'geobiology', label: 'Geobiology', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies how life and Earth processes influence one another across environments and time.', roots: ['biology', 'earth_science'], activity: 'Geobiologists investigate how organisms reshape sediments, minerals, soils, and the chemical conditions around them.' },
+        { id: 'biogeochemistry', label: 'Biogeochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies how biological, geological, and chemical processes cycle matter through Earth systems.', roots: ['biology', 'chemistry', 'earth_science'], activity: 'Biogeochemists trace how organisms, rocks, water, and gases move elements such as carbon, nitrogen, and sulfur through environments.' },
+        { id: 'physical_chemistry', label: 'Physical Chemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that explains chemical systems using the laws of physics, including energy, motion, and structure.', roots: ['physics', 'chemistry'], activity: 'Physical chemists calculate reaction rates, molecular energies, and how light and heat change matter.' },
+        { id: 'astrochemistry', label: 'Astrochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies chemical processes and molecules in space and on other worlds.', roots: ['chemistry', 'astronomy'], activity: 'Astrochemists use spectra and laboratory simulations to identify molecules in interstellar clouds, disks, and atmospheres.' },
+        { id: 'planetary_science', label: 'Planetary Science', type: 'field', group: 'Earth & Space Field', description: 'The field that studies planets, moons, and other worlds as evolving systems.', roots: ['earth_science', 'astronomy'], activity: 'Planetary scientists compare surfaces, atmospheres, interiors, and impacts using spacecraft data, samples, and telescopes.' },
+        { id: 'microbiology', label: 'Microbiology', type: 'field', group: 'Life Science Field', description: 'The field that studies microscopic organisms and viruses and how they function.', rootSpec: { core: 'biology', modifiers: ['microscopic'] }, activity: 'Microbiologists culture microbes, image cells, and test how tiny organisms grow, interact, and alter their surroundings.' },
+        { id: 'paleomicrobiology', label: 'Paleomicrobiology', type: 'field', group: 'Life Science Field', description: 'The field that studies ancient microorganisms and their traces in older environments.', rootSpec: { core: 'biology', modifiers: ['microscopic', 'ancient'] }, activity: 'Paleomicrobiologists analyze fossilized textures, biomarkers, and ancient sediments for evidence of past microbial life.' },
+        { id: 'exopaleomicrobiology', label: 'Exopaleomicrobiology', type: 'root_built', group: 'Constructed Specialty', description: 'A constructed specialty for this game about possible ancient microbial traces beyond Earth.', rootSpec: { core: 'biology', modifiers: ['microscopic', 'ancient', 'exoplanetary'] }, activity: 'In this game, exopaleomicrobiologists would compare rock textures and chemical traces on other worlds while looking for ancient microbial hints.' },
+        { id: 'geomicrobiology', label: 'Geomicrobiology', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies interactions between microorganisms and Earth materials.', rootSpec: { core: 'biology', modifiers: ['microscopic', 'earth_context'] }, activity: 'Geomicrobiologists study how microbes weather rocks, cycle elements, and leave signatures in sediments and minerals.' },
+        { id: 'genetics_field', label: 'Genetics', type: 'field', group: 'Life Science Field', description: 'The field that studies genes, inheritance, and variation.', rootSpec: { core: 'biology', modifiers: ['genetic'] }, activity: 'Geneticists trace inheritance patterns, compare DNA sequences, and test how genes influence traits.' },
+        { id: 'ecology_field', label: 'Ecology', type: 'field', group: 'Life Science Field', description: 'The field that studies interactions among organisms and environments.', rootSpec: { core: 'biology', modifiers: ['ecological'] }, activity: 'Ecologists monitor populations, habitats, and energy flow to explain how living communities change through time.' },
+        { id: 'marine_biology', label: 'Marine Biology', type: 'field', group: 'Life Science Field', description: 'The field that studies life in ocean environments.', rootSpec: { core: 'biology', modifiers: ['marine'] }, activity: 'Marine biologists sample organisms in oceans, reefs, and coasts to study adaptation, food webs, and biodiversity.' },
+        { id: 'astrobiology', label: 'Astrobiology', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies the origin, evolution, distribution, and possible future of life in the universe.', roots: ['biology', 'astronomy'], rootSpec: { core: 'biology', modifiers: ['exoplanetary'] }, activity: 'Astrobiologists investigate habitability, biosignatures, and how life-related chemistry behaves in space-like environments.' },
+        { id: 'geochemistry', label: 'Geochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies the chemical composition of Earth materials and the reactions that change them.', roots: ['chemistry', 'earth_science'], rootSpec: { core: 'chemistry', modifiers: ['earth_context'] }, activity: 'Geochemists measure elements and isotopes in rocks, water, and gases to track Earth processes and material cycling.' },
+        { id: 'atmospheric_chemistry', label: 'Atmospheric Chemistry', type: 'field', group: 'Earth & Space Field', description: 'The field that studies chemical processes in planetary atmospheres.', rootSpec: { core: 'chemistry', modifiers: ['atmospheric'] }, activity: 'Atmospheric chemists examine gases, aerosols, and reactions that shape air quality, climate, and planetary skies.' },
+        { id: 'astrophysics', label: 'Astrophysics', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies stars, galaxies, and the universe using physical laws.', roots: ['physics', 'astronomy'], rootSpec: { core: 'physics', modifiers: ['stellar'] }, activity: 'Astrophysicists use observations and equations to explain gravity, radiation, stellar structure, and cosmic evolution.' },
+        { id: 'geophysics', label: 'Geophysics', type: 'field', group: 'Earth & Space Field', description: 'The field that applies physical principles to Earth’s interior, surface, oceans, and atmosphere.', roots: ['physics', 'earth_science'], rootSpec: { core: 'physics', modifiers: ['earth_context'] }, activity: 'Geophysicists interpret seismic waves, gravity, magnetism, and heat flow to study Earth systems.' },
+        { id: 'oceanography', label: 'Oceanography', type: 'field', group: 'Earth & Space Field', description: 'The field that studies oceans as physical, chemical, biological, and geological systems.', rootSpec: { core: 'earth_science', modifiers: ['marine'] }, activity: 'Oceanographers measure currents, chemistry, ecosystems, and seafloor processes across the oceans.' },
+        { id: 'climatology', label: 'Climatology', type: 'field', group: 'Earth & Space Field', description: 'The field that studies long-term climate patterns and the processes that shape them.', rootSpec: { core: 'earth_science', modifiers: ['atmospheric'] }, activity: 'Climatologists analyze temperature, precipitation, winds, and feedbacks to explain climate patterns and change.' },
+        { id: 'observational_astronomy', label: 'Observational Astronomy', type: 'field', group: 'Earth & Space Field', description: 'The field that studies the cosmos through direct observation and measurement.', rootSpec: { core: 'astronomy', modifiers: ['observational'] }, activity: 'Observational astronomers collect light and other signals with telescopes to identify and compare distant objects.' },
+        { id: 'computational_astronomy', label: 'Computational Astronomy', type: 'field', group: 'Earth & Space Field', description: 'The field that studies astronomical systems through calculation, code, and simulation.', rootSpec: { core: 'astronomy', modifiers: ['computational'] }, activity: 'Computational astronomers build simulations and data pipelines to model orbits, stars, galaxies, and surveys.' }
+      ];
+
+      const ROOT_MODIFIERS = {
+        microscopic: { label: 'Microscopic' },
+        ancient: { label: 'Ancient' },
+        earth_context: { label: 'Earth Context' },
+        genetic: { label: 'Genetic' },
+        ecological: { label: 'Ecological' },
+        marine: { label: 'Marine' },
+        atmospheric: { label: 'Atmospheric' },
+        exoplanetary: { label: 'Exoplanetary' },
+        stellar: { label: 'Stellar' },
+        observational: { label: 'Observational' },
+        experimental: { label: 'Experimental' },
+        computational: { label: 'Computational' }
+      };
+
+      const CURATED_RECIPES = [
+        { a: 'biology', b: 'physics', result: 'biophysics', reason: 'Biology and physics combine into biophysics, which studies living systems with physical ideas and tools.', reserved: true },
+        { a: 'biology', b: 'chemistry', result: 'biochemistry', reason: 'Biology and chemistry combine into biochemistry, the chemistry of living systems.', reserved: true },
+        { a: 'biology', b: 'earth_science', result: 'geobiology', reason: 'Biology and Earth science combine into geobiology, which studies life and planetary environments together.', reserved: true },
+        { a: 'biology', b: 'astronomy', result: 'astrobiology', reason: 'Biology and astronomy combine into astrobiology, the study of life in a cosmic context.', reserved: true },
+        { a: 'physics', b: 'chemistry', result: 'physical_chemistry', reason: 'Physics and chemistry combine into physical chemistry, which explains chemical behavior with physical laws.', reserved: true },
+        { a: 'physics', b: 'earth_science', result: 'geophysics', reason: 'Physics and Earth science combine into geophysics, which studies Earth systems with physical methods.', reserved: true },
+        { a: 'physics', b: 'astronomy', result: 'astrophysics', reason: 'Physics and astronomy combine into astrophysics, which explains the universe with physical laws.', reserved: true },
+        { a: 'chemistry', b: 'earth_science', result: 'geochemistry', reason: 'Chemistry and Earth science combine into geochemistry, which studies the chemistry of Earth materials.', reserved: true },
+        { a: 'chemistry', b: 'astronomy', result: 'astrochemistry', reason: 'Chemistry and astronomy combine into astrochemistry, which studies molecules and reactions in space.', reserved: true },
+        { a: 'earth_science', b: 'astronomy', result: 'planetary_science', reason: 'Earth science and astronomy combine into planetary science, which compares planets and other worlds as systems.', reserved: true },
+
+        { a: 'biology', b: 'biophysics', result: 'scale', reason: 'Biophysics often connects living systems across molecular, cellular, and organismal scales.' },
+        { a: 'biochemistry', b: 'chemistry', result: 'molecule', reason: 'Biochemistry keeps attention on molecules as the chemical units of life.' },
+        { a: 'geobiology', b: 'earth_science', result: 'habitat', reason: 'Geobiology highlights that living things occupy specific environmental settings and resources.' },
+        { a: 'astrobiology', b: 'astronomy', result: 'habitability', reason: 'Astrobiology naturally asks which worlds can sustain life-friendly conditions.' },
+        { a: 'physical_chemistry', b: 'physics', result: 'matter', reason: 'Physical chemistry explains matter by linking substances to energy, motion, and structure.' },
+        { a: 'geophysics', b: 'physics', result: 'motion', reason: 'Geophysics studies moving Earth materials, waves, and forces throughout the planet.' },
+        { a: 'astrophysics', b: 'physics', result: 'gravity', reason: 'Astrophysics depends on gravity to explain orbits, stars, and structure in the universe.' },
+        { a: 'geochemistry', b: 'earth_science', result: 'mineral', reason: 'Geochemistry helps explain how minerals form, transform, and store elements in Earth materials.' },
+        { a: 'astrochemistry', b: 'astronomy', result: 'spectrum', reason: 'Astrochemistry relies on spectra to identify molecules in distant environments.' },
+        { a: 'planetary_science', b: 'astronomy', result: 'planet', reason: 'Planetary science focuses directly on planets and related worlds as scientific objects.' },
+        { a: 'biochemistry', b: 'earth_science', result: 'biogeochemistry', reason: 'Biogeochemistry connects the chemistry of life to soils, waters, sediments, and global element cycles.' },
+
+        { a: 'physics', b: 'scale', result: 'microscopic', reason: 'Physical measurement across scales helps define the microscopic realm.' },
+        { a: 'chemistry', b: 'matter', result: 'atom', reason: 'Chemistry explains matter by reasoning about atoms and their interactions.' },
+        { a: 'chemistry', b: 'atom', result: 'element', reason: 'Atoms sorted by proton identity define chemical elements.' },
+        { a: 'molecule', b: 'atom', result: 'compound', reason: 'Molecules built from different atoms form compounds.' },
+        { a: 'matter', b: 'atom', result: 'charge', reason: 'Atomic structure introduces electrically charged particles and behavior.' },
+        { a: 'motion', b: 'matter', result: 'energy', reason: 'Matter in motion highlights kinetic energy and energetic change.' },
+        { a: 'spectrum', b: 'matter', result: 'light', reason: 'A spectrum is a way of organizing and studying light from matter.', reserved: false },
+        { a: 'light', b: 'motion', result: 'wave', reason: 'Light is a classic example of wave behavior.' },
+        { a: 'wave', b: 'motion', result: 'sound', reason: 'Sound is produced when motion travels as a wave through matter.' },
+        { a: 'motion', b: 'gravity', result: 'orbit', reason: 'Orbital motion emerges when movement continually falls under gravity.' },
+        { a: 'orbit', b: 'measurement', result: 'time', reason: 'Repeated orbital cycles are one of science’s oldest ways to measure time.' },
+        { a: 'orbit', b: 'planet', result: 'season', reason: 'Planetary orbit and geometry create repeating seasonal patterns.' },
+        { a: 'astronomy', b: 'light', result: 'observation', reason: 'Astronomy depends on observing the light that reaches us.' },
+        { a: 'observation', b: 'scale', result: 'measurement', reason: 'Measurement gives observations a defined scale and standard.' },
+        { a: 'observation', b: 'measurement', result: 'data', reason: 'Recorded observations and measurements become usable data.' },
+        { a: 'measurement', b: 'chemistry', result: 'experiment', reason: 'Controlled chemical investigation is a classic model of experimental science.' },
+        { a: 'physics', b: 'data', result: 'model', reason: 'Physics often turns data into predictive models of how systems behave.' },
+        { a: 'data', b: 'experiment', result: 'evidence', reason: 'Experimental data becomes evidence when used to evaluate explanations.' },
+        { a: 'model', b: 'evidence', result: 'prediction', reason: 'A model supported by evidence can make informed predictions.' },
+        { a: 'model', b: 'data', result: 'simulation', reason: 'Simulations are models fed with data and assumptions through time.' },
+        { a: 'experiment', b: 'system', result: 'variable', reason: 'Experiments identify which parts of a system can vary and be tested.' },
+        { a: 'habitat', b: 'planet', result: 'system', reason: 'Habitats nested on planets encourage thinking in terms of interacting systems.' },
+        { a: 'observation', b: 'system', result: 'sampling', reason: 'Large systems are often investigated through representative sampling.' },
+        { a: 'experiment', b: 'model', result: 'experimental', reason: 'Experiments define a hands-on, intervention-based style of inquiry.' },
+        { a: 'observation', b: 'data', result: 'observational', reason: 'Observation joined with recorded data defines observational practice.' },
+
+        { a: 'biology', b: 'molecule', result: 'cell', reason: 'Biology and molecules meet in the cell, life’s fundamental unit.' },
+        { a: 'cell', b: 'habitability', result: 'organism', reason: 'Cells under suitable conditions organize into whole living organisms.' },
+        { a: 'organism', b: 'cell', result: 'tissue', reason: 'Cells working together within organisms form tissues.' },
+        { a: 'cell', b: 'compound', result: 'dna', reason: 'DNA is a complex compound central to cellular heredity.' },
+        { a: 'dna', b: 'organism', result: 'inheritance', reason: 'DNA links biological information to inherited traits in organisms.' },
+        { a: 'dna', b: 'data', result: 'gene', reason: 'Scientific analysis treats genes as interpretable units of hereditary information.' },
+        { a: 'gene', b: 'experiment', result: 'mutation', reason: 'Genetic experiments often reveal mutation as a source of change.' },
+        { a: 'mutation', b: 'habitat', result: 'adaptation', reason: 'Mutations filtered by environmental conditions can contribute to adaptation.' },
+        { a: 'adaptation', b: 'organism', result: 'species', reason: 'Patterns of adaptation help define biological lineages and species.' },
+        { a: 'species', b: 'system', result: 'population', reason: 'A species distributed through one system can be studied as a population.' },
+        { a: 'habitat', b: 'climate', result: 'ecosystem', reason: 'Habitats shaped by climate become functioning ecosystems.' },
+        { a: 'ecosystem', b: 'species', result: 'biodiversity', reason: 'Many species interacting in ecosystems create biodiversity.' },
+        { a: 'ecosystem', b: 'population', result: 'food_web', reason: 'Populations connected inside ecosystems create food webs.' },
+        { a: 'species', b: 'habitat', result: 'niche', reason: 'A species in a particular habitat occupies a niche.' },
+        { a: 'organism', b: 'molecule', result: 'enzyme', reason: 'Enzymes are biological molecules that help organisms function.' },
+        { a: 'enzyme', b: 'energy', result: 'metabolism', reason: 'Enzymes channel energy through metabolic pathways.' },
+        { a: 'light', b: 'metabolism', result: 'photosynthesis', reason: 'Photosynthesis stores light energy within metabolism.' },
+        { a: 'organism', b: 'energy', result: 'respiration', reason: 'Organisms rely on respiration to release usable energy.' },
+        { a: 'species', b: 'biodiversity', result: 'symbiosis', reason: 'Species-rich communities showcase many forms of close interaction, including symbiosis.' },
+        { a: 'gene', b: 'inheritance', result: 'genetic', reason: 'Genes and inheritance together define the genetic perspective.' },
+        { a: 'ecosystem', b: 'system', result: 'ecological', reason: 'Thinking about ecosystems as systems creates an ecological viewpoint.' },
+
+        { a: 'chemistry', b: 'planet', result: 'water', reason: 'Planetary chemistry naturally raises the importance of water.' },
+        { a: 'planet', b: 'gravity', result: 'atmosphere', reason: 'Gravity helps planets retain atmospheres.' },
+        { a: 'water', b: 'atmosphere', result: 'cloud', reason: 'Water suspended in an atmosphere forms clouds.' },
+        { a: 'cloud', b: 'motion', result: 'weather', reason: 'Moving clouds and air masses are core parts of weather.' },
+        { a: 'weather', b: 'season', result: 'climate', reason: 'Long-running seasonal weather patterns become climate.' },
+        { a: 'water', b: 'planet', result: 'ocean', reason: 'Planetary water collected at scale forms oceans.' },
+        { a: 'ocean', b: 'climate', result: 'current', reason: 'Climate differences drive many major currents.' },
+        { a: 'current', b: 'climate', result: 'circulation', reason: 'Persistent currents join into large circulation systems.' },
+        { a: 'mineral', b: 'planet', result: 'rock', reason: 'Minerals assembled on a planet create rocks and crustal materials.' },
+        { a: 'earth_science', b: 'rock', result: 'surface', reason: 'Earth science often begins with rocky surfaces and landscapes.' },
+        { a: 'surface', b: 'motion', result: 'erosion', reason: 'Surface material moved by water, wind, or ice is erosion.' },
+        { a: 'erosion', b: 'water', result: 'sediment', reason: 'Erosion carried by water produces sediment.' },
+        { a: 'sediment', b: 'time', result: 'fossil', reason: 'Sediment and deep time preserve fossils.' },
+        { a: 'light', b: 'energy', result: 'heat', reason: 'Absorbed radiant energy often appears as heat.' },
+        { a: 'motion', b: 'heat', result: 'tectonics', reason: 'Internal heat and motion drive tectonic activity.' },
+        { a: 'tectonics', b: 'heat', result: 'volcano', reason: 'Heat acting through tectonic systems produces volcanoes.' },
+        { a: 'tectonics', b: 'motion', result: 'earthquake', reason: 'Tectonic motion is a direct source of earthquakes.' },
+        { a: 'rock', b: 'time', result: 'ancient', reason: 'Rocks are one of our clearest records of ancient conditions.' },
+        { a: 'habitat', b: 'rock', result: 'earth_context', reason: 'Combining living settings with rock frames life in geologic Earth context.' },
+        { a: 'system', b: 'water', result: 'cycle', reason: 'Water moving through a system reveals repeating cycles.' },
+        { a: 'climate', b: 'system', result: 'feedback', reason: 'Climate science is full of reinforcing and balancing feedbacks.' },
+        { a: 'surface', b: 'gravity', result: 'crater', reason: 'Gravity and impacts shape cratered surfaces on many worlds.' },
+        { a: 'ocean', b: 'habitat', result: 'marine', reason: 'Ocean habitats define marine settings.' },
+        { a: 'atmosphere', b: 'climate', result: 'atmospheric', reason: 'Climate expressed through gases and circulation becomes an atmospheric viewpoint.' },
+
+        { a: 'gravity', b: 'matter', result: 'star', reason: 'Gravity acting on matter at immense scale forms stars.' },
+        { a: 'star', b: 'planet', result: 'solar_system', reason: 'Stars with orbiting planets make solar systems.' },
+        { a: 'habitability', b: 'planet', result: 'exoplanet', reason: 'Searching for habitability naturally turns attention to exoplanets.' },
+        { a: 'exoplanet', b: 'observation', result: 'transit', reason: 'Exoplanets are often detected or studied through transits.' },
+        { a: 'transit', b: 'spectrum', result: 'biosignature', reason: 'Transit spectra can hint at possible biosignatures in atmospheres.' },
+        { a: 'star', b: 'spectrum', result: 'stellar', reason: 'Stellar science depends heavily on reading spectra from stars.' },
+        { a: 'star', b: 'light', result: 'radiation', reason: 'Stars are strong sources of radiation across many wavelengths.' },
+        { a: 'star', b: 'matter', result: 'cosmic_dust', reason: 'Stars and matter cycles create and recycle cosmic dust.' },
+        { a: 'exoplanet', b: 'habitability', result: 'exoplanetary', reason: 'Exoplanets considered through habitability define an exoplanetary context.' },
+
+        { a: 'matter', b: 'energy', result: 'machine', reason: 'Machines are built to direct matter and energy into useful work.' },
+        { a: 'machine', b: 'data', result: 'sensor', reason: 'Sensors are machines designed to capture data from the world.' },
+        { a: 'sensor', b: 'observation', result: 'instrument', reason: 'An instrument extends observation through a purpose-built sensor.' },
+        { a: 'energy', b: 'motion', result: 'engine', reason: 'Engines transform energy into controlled motion.' },
+        { a: 'engine', b: 'planet', result: 'vehicle', reason: 'Engines adapted to real environments become vehicles.' },
+        { a: 'vehicle', b: 'gravity', result: 'rocket', reason: 'Rockets are vehicles designed to overcome gravity by propulsion.' },
+        { a: 'mineral', b: 'heat', result: 'metal', reason: 'Heating and processing minerals yields workable metals.' },
+        { a: 'charge', b: 'motion', result: 'electricity', reason: 'Moving charge is electricity.' },
+        { a: 'electricity', b: 'metal', result: 'circuit', reason: 'Conductive metals guide electricity through circuits.' },
+        { a: 'circuit', b: 'data', result: 'computer', reason: 'Circuits organized to process data make computers.' },
+        { a: 'computer', b: 'data', result: 'algorithm', reason: 'Computers rely on algorithms to transform data step by step.' },
+        { a: 'computer', b: 'model', result: 'computational', reason: 'Using computers to run or analyze models creates a computational approach.' },
+        { a: 'instrument', b: 'microscopic', result: 'microscope', reason: 'An instrument focused on the microscopic scale is a microscope.' },
+        { a: 'instrument', b: 'spectrum', result: 'spectrometer', reason: 'An instrument built to analyze a spectrum is a spectrometer.' },
+        { a: 'instrument', b: 'light', result: 'telescope', reason: 'An instrument that gathers light from far away is a telescope.' },
+        { a: 'atmosphere', b: 'matter', result: 'pressure', reason: 'Atmospheric matter exerts pressure.' },
+        { a: 'heat', b: 'measurement', result: 'temperature', reason: 'Temperature is a measurement of thermal state.' },
+        { a: 'heat', b: 'matter', result: 'phase_change', reason: 'Heating matter can change its phase.' },
+        { a: 'electricity', b: 'matter', result: 'magnetism', reason: 'Electric charge and matter together reveal magnetic effects.' },
+        { a: 'sound', b: 'motion', result: 'vibration', reason: 'Sound-producing motion is commonly described as vibration.' },
+
+        { a: 'biology', b: 'microscopic', result: 'microbiology', reason: 'Biology studied at the microscopic scale becomes microbiology.', kind: 'root' },
+        { a: 'microbiology', b: 'ancient', result: 'paleomicrobiology', reason: 'Adding deep time to microbiology yields paleomicrobiology.', kind: 'root' },
+        { a: 'paleomicrobiology', b: 'exoplanetary', result: 'exopaleomicrobiology', reason: 'Ancient microbial questions applied beyond Earth produce exopaleomicrobiology.', kind: 'root' },
+        { a: 'microbiology', b: 'earth_context', result: 'geomicrobiology', reason: 'Microbiology framed by rocks and sediments becomes geomicrobiology.', kind: 'root' },
+        { a: 'biology', b: 'genetic', result: 'genetics_field', reason: 'Biology focused on inheritance and genes becomes genetics.', kind: 'root' },
+        { a: 'biology', b: 'ecological', result: 'ecology_field', reason: 'Biology framed around interactions and environments becomes ecology.', kind: 'root' },
+        { a: 'biology', b: 'marine', result: 'marine_biology', reason: 'Biology focused on ocean life becomes marine biology.', kind: 'root' },
+        { a: 'biology', b: 'exoplanetary', result: 'astrobiology', reason: 'Biology applied to worlds beyond Earth becomes astrobiology.', kind: 'root' },
+        { a: 'chemistry', b: 'earth_context', result: 'geochemistry', reason: 'Chemistry grounded in rocks and Earth materials becomes geochemistry.', kind: 'root' },
+        { a: 'chemistry', b: 'atmospheric', result: 'atmospheric_chemistry', reason: 'Chemistry focused on atmospheric processes becomes atmospheric chemistry.', kind: 'root' },
+        { a: 'physics', b: 'stellar', result: 'astrophysics', reason: 'Physics applied to stars and cosmic systems becomes astrophysics.', kind: 'root' },
+        { a: 'physics', b: 'earth_context', result: 'geophysics', reason: 'Physics applied to Earth materials and processes becomes geophysics.', kind: 'root' },
+        { a: 'earth_science', b: 'marine', result: 'oceanography', reason: 'Earth science focused on oceans becomes oceanography.', kind: 'root' },
+        { a: 'earth_science', b: 'atmospheric', result: 'climatology', reason: 'Earth science focused on atmospheric patterns becomes climatology.', kind: 'root' },
+        { a: 'astronomy', b: 'observational', result: 'observational_astronomy', reason: 'Astronomy focused on direct evidence gathering becomes observational astronomy.', kind: 'root' },
+        { a: 'astronomy', b: 'computational', result: 'computational_astronomy', reason: 'Astronomy focused on models and code becomes computational astronomy.', kind: 'root' }
+      ];
+
+      const CATALOG = buildCatalog(ITEM_DEFS);
+      const RESERVED_STARTING_PAIRS = new Map();
+      const GENERAL_RECIPES = new Map();
+      const ROOT_RECIPES = new Map();
+      const DUPLICATE_RECIPE_PAIRS = [];
+      const INVALID_RECIPE_REFERENCES = [];
+      const RESERVED_PAIR_CONFLICTS = [];
+      const RESERVED_PAIR_EXPECTATIONS = [
+        { label: 'Biology + Chemistry', a: 'biology', b: 'chemistry', result: 'biochemistry' },
+        { label: 'Biology + Physics', a: 'biology', b: 'physics', result: 'biophysics' },
+        { label: 'Biology + Earth Science', a: 'biology', b: 'earth_science', result: 'geobiology' },
+        { label: 'Biology + Astronomy', a: 'biology', b: 'astronomy', result: 'astrobiology' },
+        { label: 'Physics + Chemistry', a: 'physics', b: 'chemistry', result: 'physical_chemistry' },
+        { label: 'Physics + Earth Science', a: 'physics', b: 'earth_science', result: 'geophysics' },
+        { label: 'Physics + Astronomy', a: 'physics', b: 'astronomy', result: 'astrophysics' },
+        { label: 'Chemistry + Earth Science', a: 'chemistry', b: 'earth_science', result: 'geochemistry' },
+        { label: 'Chemistry + Astronomy', a: 'chemistry', b: 'astronomy', result: 'astrochemistry' },
+        { label: 'Earth Science + Astronomy', a: 'earth_science', b: 'astronomy', result: 'planetary_science' }
+      ];
+      const ROOT_REGRESSION_CASES = [
+        { label: 'Biology + Microscopic', a: 'biology', b: 'microscopic', expected: 'microbiology' },
+        { label: 'Microbiology + Ancient', a: 'microbiology', b: 'ancient', expected: 'paleomicrobiology' },
+        { label: 'Paleomicrobiology + Exoplanetary', a: 'paleomicrobiology', b: 'exoplanetary', expected: 'exopaleomicrobiology' },
+        { label: 'Microbiology + Earth Context', a: 'microbiology', b: 'earth_context', expected: 'geomicrobiology' },
+        { label: 'Biochemistry + Exoplanetary', a: 'biochemistry', b: 'exoplanetary', expected: null },
+        { label: 'Biogeochemistry + Microscopic', a: 'biogeochemistry', b: 'microscopic', expected: null },
+        { label: 'Geophysics + Astrochemistry', a: 'geophysics', b: 'astrochemistry', expected: null },
+        { label: 'Astrophysics + Geochemistry', a: 'astrophysics', b: 'geochemistry', expected: null }
+      ];
+
+      const state = {
+        discovered: new Set(STARTING_ITEM_IDS),
+        workspace: [],
+        nextTileId: 1,
+        toasts: [],
+        zCounter: 1,
+        search: '',
+        activeInfoId: null,
+        collectionOpen: false,
+        rootsOpen: false,
+        drag: null,
+        lastAudit: null,
+        selectedTileId: null,
+        storageWarningShown: false
+      };
+
+      const desk = document.getElementById('desk');
+      const deskEmptyHint = document.getElementById('deskEmptyHint');
+      const trashZone = document.getElementById('trashZone');
+      const inventoryList = document.getElementById('inventoryList');
+      const inventorySearch = document.getElementById('inventorySearch');
+      const toastStack = document.getElementById('toastStack');
+      const statusBar = document.getElementById('statusBar');
+      const appShell = document.querySelector('.app');
+      const infoBackdrop = document.getElementById('infoBackdrop');
+      const infoTitle = document.getElementById('infoTitle');
+      const infoSubtitle = document.getElementById('infoSubtitle');
+      const infoChips = document.getElementById('infoChips');
+      const infoDescription = document.getElementById('infoDescription');
+      const infoRootNote = document.getElementById('infoRootNote');
+      const infoActivitySection = document.getElementById('infoActivitySection');
+      const infoActivity = document.getElementById('infoActivity');
+      const infoRecipes = document.getElementById('infoRecipes');
+      const collectionBackdrop = document.getElementById('collectionBackdrop');
+      const rootsBackdrop = document.getElementById('rootsBackdrop');
+      const collectionGrid = document.getElementById('collectionGrid');
+      const rootGrid = document.getElementById('rootGrid');
+      const rootRules = document.getElementById('rootRules');
+      const modalState = { lastFocused: null };
+
+      function buildCatalog(defs) {
+        const catalog = {};
+        for (const item of defs) {
+          if (catalog[item.id]) {
+            throw new Error('Duplicate catalog id: ' + item.id);
+          }
+          catalog[item.id] = Object.freeze({ ...item });
+        }
+        return Object.freeze(catalog);
+      }
+
+      function pairKey(a, b) {
+        return [a, b].sort().join('::');
+      }
+
+      function titleCaseType(type) {
+        if (type === 'root_built') return 'Root-Built';
+        if (type === 'field') return 'Field';
+        return 'Concept';
+      }
+
+      function getItem(id) {
+        return CATALOG[id] || null;
+      }
+
+      function registerRecipes() {
+        for (const recipe of CURATED_RECIPES) {
+          const refsValid = !!(CATALOG[recipe.a] && CATALOG[recipe.b] && CATALOG[recipe.result]);
+          if (!refsValid) {
+            INVALID_RECIPE_REFERENCES.push(pairKey(recipe.a, recipe.b));
+            continue;
+          }
+
+          const key = pairKey(recipe.a, recipe.b);
+          const targetMap = recipe.kind === 'root' ? ROOT_RECIPES : GENERAL_RECIPES;
+          if (recipe.reserved) {
+            RESERVED_STARTING_PAIRS.set(key, recipe.result);
+          }
+          if (targetMap.has(key) || (recipe.kind === 'root' && GENERAL_RECIPES.has(key)) || (recipe.kind !== 'root' && ROOT_RECIPES.has(key))) {
+            DUPLICATE_RECIPE_PAIRS.push(key);
+            continue;
+          }
+          targetMap.set(key, Object.freeze({ ...recipe }));
+        }
+
+        for (const recipe of CURATED_RECIPES) {
+          if (recipe.kind === 'root') continue;
+          const key = pairKey(recipe.a, recipe.b);
+          if (!recipe.reserved && RESERVED_STARTING_PAIRS.has(key)) {
+            RESERVED_PAIR_CONFLICTS.push(key);
+          }
+        }
+      }
+
+      function isRootModifier(itemId) {
+        return Boolean(ROOT_MODIFIERS[itemId]);
+      }
+
+      function getRootState(itemId) {
+        const item = getItem(itemId);
+        if (!item) return null;
+        if (item.type === 'field' && STARTING_SET.has(item.id)) {
+          return { baseId: item.id, core: item.id, modifiers: [] };
+        }
+        if (item.rootSpec && (item.type === 'field' || item.type === 'root_built')) {
+          return { baseId: item.id, core: item.rootSpec.core, modifiers: [...item.rootSpec.modifiers] };
+        }
+        return null;
+      }
+
+      function validateRootRecipe(recipe, baseId, modifierId) {
+        const baseState = getRootState(baseId);
+        const modifier = getItem(modifierId);
+        const result = getItem(recipe.result);
+        if (!baseState || !modifier || !result || !result.rootSpec) return false;
+        if (result.type !== 'field' && result.type !== 'root_built') return false;
+        if (!isRootModifier(modifierId)) return false;
+        if (baseState.modifiers.includes(modifierId)) return false;
+        if (baseState.modifiers.length >= MAX_ROOT_MODIFIERS) return false;
+        if (!result.rootSpec || result.rootSpec.core !== baseState.core) return false;
+        const expectedModifiers = [...baseState.modifiers, modifierId].sort().join('|');
+        const actualModifiers = [...result.rootSpec.modifiers].sort().join('|');
+        return expectedModifiers === actualModifiers;
+      }
+
+      function resolveRootRecipe(idA, idB) {
+        const itemA = getItem(idA);
+        const itemB = getItem(idB);
+        if (!itemA || !itemB) return null;
+        const aIsModifier = isRootModifier(idA);
+        const bIsModifier = isRootModifier(idB);
+        if (aIsModifier === bIsModifier) return null;
+        const baseId = aIsModifier ? idB : idA;
+        const modifierId = aIsModifier ? idA : idB;
+        const key = pairKey(baseId, modifierId);
+        const recipe = ROOT_RECIPES.get(key);
+        if (!recipe) return null;
+        if (!validateRootRecipe(recipe, baseId, modifierId)) return null;
+        return recipe;
+      }
+
+      function resolveRecipe(idA, idB) {
+        const key = pairKey(idA, idB);
+        return GENERAL_RECIPES.get(key) || resolveRootRecipe(idA, idB);
+      }
+
+      function resolveRecipeResult(idA, idB) {
+        const recipe = resolveRecipe(idA, idB);
+        return recipe ? recipe.result : null;
+      }
+
+      function computeReachable() {
+        const reachable = new Set(STARTING_ITEM_IDS);
+        const registeredRecipes = [
+          ...GENERAL_RECIPES.values(),
+          ...ROOT_RECIPES.values()
+        ];
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const recipe of registeredRecipes) {
+            if (!reachable.has(recipe.a) || !reachable.has(recipe.b) || reachable.has(recipe.result)) {
+              continue;
+            }
+            if (resolveRecipeResult(recipe.a, recipe.b) === recipe.result) {
+              reachable.add(recipe.result);
+              changed = true;
+            }
+          }
+        }
+        return reachable;
+      }
+
+      function runAudit(logToConsole = true) {
+        const curatedIds = ITEM_DEFS.filter((item) => !STARTING_SET.has(item.id)).map((item) => item.id);
+        const reachable = computeReachable();
+        const unreachable = curatedIds.filter((id) => !reachable.has(id));
+        const totalCurated = curatedIds.length;
+        const reservedRegressionFailures = RESERVED_PAIR_EXPECTATIONS
+          .filter((test) => resolveRecipeResult(test.a, test.b) !== test.result)
+          .map((test) => test.label || (test.a + ' + ' + test.b + ' → ' + test.result));
+        const rootRegressionFailures = ROOT_REGRESSION_CASES
+          .filter((test) => resolveRecipeResult(test.a, test.b) !== test.expected)
+          .map((test) => test.label + (test.expected ? (' should produce ' + test.expected) : ' should not resolve'));
+        const audit = {
+          totalCurated,
+          reachableCurated: totalCurated - unreachable.length,
+          unreachableCurated: unreachable.length,
+          duplicateRecipePairs: DUPLICATE_RECIPE_PAIRS.length,
+          invalidRecipeReferences: INVALID_RECIPE_REFERENCES.length,
+          reservedPairConflicts: RESERVED_PAIR_CONFLICTS.length,
+          reservedPairRegressionFailures: reservedRegressionFailures.length,
+          rootRegressionFailures: rootRegressionFailures.length,
+          unreachableItems: unreachable,
+          status: (unreachable.length === 0
+            && DUPLICATE_RECIPE_PAIRS.length === 0
+            && INVALID_RECIPE_REFERENCES.length === 0
+            && RESERVED_PAIR_CONFLICTS.length === 0
+            && reservedRegressionFailures.length === 0
+            && rootRegressionFailures.length === 0) ? 'PASS' : 'FAIL'
+        };
+        state.lastAudit = audit;
+
+        if (logToConsole) {
+          console.log('=== INFINITE SCIENCE AUDIT ===');
+          console.log('Total curated items:', audit.totalCurated);
+          console.log('Reachable curated items:', audit.reachableCurated);
+          console.log('Unreachable curated items:', audit.unreachableCurated);
+          console.log('Duplicate recipe pairs:', audit.duplicateRecipePairs);
+          console.log('Invalid recipe references:', audit.invalidRecipeReferences);
+          console.log('Reserved-pair conflicts:', audit.reservedPairConflicts);
+          console.log('Reserved-pair regression failures:', audit.reservedPairRegressionFailures);
+          console.log('Root regression failures:', audit.rootRegressionFailures);
+          console.log('AUDIT STATUS:', audit.status);
+          if (audit.unreachableItems.length) {
+            console.log('Unreachable item ids:', audit.unreachableItems.join(', '));
+          }
+          if (DUPLICATE_RECIPE_PAIRS.length) {
+            console.log('Duplicate pairs:', DUPLICATE_RECIPE_PAIRS.join(', '));
+          }
+          if (INVALID_RECIPE_REFERENCES.length) {
+            console.log('Invalid references:', INVALID_RECIPE_REFERENCES.join(', '));
+          }
+          if (RESERVED_PAIR_CONFLICTS.length) {
+            console.log('Reserved conflicts:', RESERVED_PAIR_CONFLICTS.join(', '));
+          }
+          if (reservedRegressionFailures.length) {
+            console.log('Reserved regression failures:', reservedRegressionFailures.join(', '));
+          }
+          if (rootRegressionFailures.length) {
+            console.log('Root regression failures:', rootRegressionFailures.join(', '));
+          }
+        }
+        return audit;
+      }
+
+      function saveState() {
+        const payload = {
+          discovered: [...state.discovered],
+          workspace: state.workspace.map((tile) => ({ id: tile.id, itemId: tile.itemId, x: tile.x, y: tile.y, z: tile.z })),
+          nextTileId: state.nextTileId,
+          zCounter: state.zCounter
+        };
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        } catch (error) {
+          if (!state.storageWarningShown) {
+            state.storageWarningShown = true;
+            console.warn('Could not save Infinite Science state.', error);
+            pushToast('Saving unavailable', 'Progress could not be written to local storage in this browser session.', 'warn');
+          }
+        }
+      }
+
+      function setAppShellModalState(isModalOpen) {
+        if ('inert' in appShell) {
+          appShell.inert = isModalOpen;
+        } else {
+          appShell.setAttribute('aria-hidden', isModalOpen ? 'true' : 'false');
+          appShell.style.pointerEvents = isModalOpen ? 'none' : '';
+        }
+      }
+
+      function normalizeWorkspacePositions(options = {}) {
+        const { persist = true } = options;
+        const bounds = desk.getBoundingClientRect();
+        if (bounds.width <= 0 || bounds.height <= 0) {
+          return false;
+        }
+        let changed = false;
+        for (const tile of state.workspace) {
+          const pos = clampTilePosition(tile.x, tile.y);
+          if (tile.x !== pos.x || tile.y !== pos.y) {
+            tile.x = pos.x;
+            tile.y = pos.y;
+            changed = true;
+          }
+        }
+        if (changed && persist) {
+          saveState();
+        }
+        return changed;
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.discovered)) {
+            const safeIds = parsed.discovered.filter((id) => CATALOG[id]);
+            state.discovered = new Set([...STARTING_ITEM_IDS, ...safeIds]);
+          }
+          if (Array.isArray(parsed.workspace)) {
+            state.workspace = parsed.workspace
+              .filter((tile) => tile && CATALOG[tile.itemId] && state.discovered.has(tile.itemId))
+              .map((tile) => {
+                return {
+                  id: Number.isFinite(Number(tile.id)) ? Number(tile.id) : state.nextTileId++,
+                  itemId: tile.itemId,
+                  x: Number.isFinite(Number(tile.x)) ? Number(tile.x) : 0,
+                  y: Number.isFinite(Number(tile.y)) ? Number(tile.y) : 0,
+                  z: Number.isFinite(Number(tile.z)) ? Number(tile.z) : 1
+                };
+              });
+          }
+          const maxTileId = state.workspace.reduce((maxId, tile) => Math.max(maxId, tile.id), 0);
+          const maxZ = state.workspace.reduce((highestZ, tile) => Math.max(highestZ, tile.z || 0), 0);
+          state.nextTileId = Math.max(maxTileId + 1, Number(parsed.nextTileId) || 1, 1);
+          state.zCounter = Math.max(maxZ, Number(parsed.zCounter) || 0, 1);
+        } catch (error) {
+          console.warn('Could not load saved Infinite Science state.', error);
+        }
+      }
+
+      function clampTilePosition(x, y) {
+        const bounds = desk.getBoundingClientRect();
+        const maxX = Math.max(0, bounds.width - TILE_W);
+        const maxY = Math.max(0, bounds.height - TILE_H);
+        return {
+          x: Math.max(0, Math.min(maxX, x)),
+          y: Math.max(0, Math.min(maxY, y))
+        };
+      }
+
+      function createWorkspaceTile(itemId, x, y, options = {}) {
+        const { persist = true, render = true } = options;
+        const pos = clampTilePosition(x, y);
+        const tile = { id: state.nextTileId++, itemId, x: pos.x, y: pos.y, z: ++state.zCounter };
+        state.workspace.push(tile);
+        if (persist) {
+          saveState();
+        }
+        if (render) {
+          renderWorkspace();
+        }
+        return tile;
+      }
+
+      function removeWorkspaceTile(tileId) {
+        state.workspace = state.workspace.filter((tile) => tile.id !== tileId);
+        if (state.selectedTileId === tileId) {
+          state.selectedTileId = null;
+        }
+        saveState();
+        renderWorkspace();
+      }
+
+      function clearDesk() {
+        state.workspace = [];
+        state.selectedTileId = null;
+        saveState();
+        renderWorkspace();
+      }
+
+      function resetGame() {
+        if (!window.confirm('Reset the game? This clears the desk, discovery collection, and saved progress.')) return;
+        const openBackdropNode = getOpenBackdrop();
+        if (openBackdropNode) {
+          closeBackdrop(openBackdropNode, { restoreFocus: false });
+        }
+        modalState.lastFocused = null;
+        state.discovered = new Set(STARTING_ITEM_IDS);
+        state.workspace = [];
+        state.nextTileId = 1;
+        state.zCounter = 1;
+        state.search = '';
+        inventorySearch.value = '';
+        state.activeInfoId = null;
+        state.selectedTileId = null;
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+          console.warn('Could not clear saved Infinite Science state.', error);
+        }
+        renderAll();
+        pushToast('Game reset', 'Back to the five starting sciences.', 'warn');
+      }
+
+      function pushToast(title, message, tone) {
+        const toast = { id: Date.now() + Math.random(), title, message, tone };
+        state.toasts.push(toast);
+        if (state.toasts.length > MAX_TOASTS) {
+          state.toasts.shift();
+        }
+        renderToasts();
+        window.setTimeout(() => {
+          state.toasts = state.toasts.filter((entry) => entry.id !== toast.id);
+          renderToasts();
+        }, 2600);
+      }
+
+      function renderToasts() {
+        toastStack.innerHTML = '';
+        for (const toast of state.toasts) {
+          const el = document.createElement('div');
+          el.className = 'toast ' + (toast.tone || '');
+          el.innerHTML = '<div class="toast-title"></div><div class="toast-message"></div>';
+          el.querySelector('.toast-title').textContent = toast.title;
+          el.querySelector('.toast-message').textContent = toast.message;
+          toastStack.appendChild(el);
+        }
+      }
+
+      function itemMatchesSearch(item) {
+        if (!state.search) return true;
+        const haystack = [
+          item.label,
+          item.group,
+          item.description,
+          titleCaseType(item.type),
+          item.rootSpec ? item.rootSpec.modifiers.map((id) => ROOT_MODIFIERS[id]?.label || id).join(' ') : ''
+        ].join(' ').toLowerCase();
+        return haystack.includes(state.search);
+      }
+
+      function sortedDiscoveredItems() {
+        return [...state.discovered]
+          .map((id) => CATALOG[id])
+          .sort((a, b) => a.label.localeCompare(b.label));
+      }
+
+      function renderStatusBar() {
+        const discoveredCount = [...state.discovered].filter((id) => !STARTING_SET.has(id)).length;
+        const totalDiscoveries = state.lastAudit ? state.lastAudit.totalCurated : ITEM_DEFS.length - STARTING_ITEM_IDS.length;
+        const startingCount = STARTING_ITEM_IDS.length;
+        const rootCount = [...state.discovered].filter((id) => CATALOG[id]?.type === 'root_built').length;
+        const audit = state.lastAudit;
+        statusBar.innerHTML = '';
+        const blocks = [
+          { label: 'Curated discoveries', value: discoveredCount + ' / ' + totalDiscoveries },
+          { label: 'Starting sciences', value: String(startingCount) },
+          { label: 'Constructed specialties', value: String(rootCount) },
+          { label: 'Audit', value: audit ? audit.status : '—' }
+        ];
+        for (const block of blocks) {
+          const card = document.createElement('div');
+          card.className = 'status-card';
+          card.innerHTML = '<strong></strong><span class="inventory-counter"></span>';
+          card.querySelector('strong').textContent = block.value;
+          card.querySelector('span').textContent = block.label;
+          statusBar.appendChild(card);
+        }
+      }
+
+      function renderInventory() {
+        inventoryList.innerHTML = '';
+        const items = sortedDiscoveredItems().filter(itemMatchesSearch);
+        for (const item of items) {
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'inventory-row';
+          row.dataset.itemId = item.id;
+          row.setAttribute('role', 'listitem');
+          row.setAttribute('aria-label', item.label + '. Press Enter to place on the desk, or I to read its note.');
+          row.innerHTML = [
+            '<div class="inventory-main">',
+            '  <div class="inventory-name"></div>',
+            '  <div class="inventory-caption"></div>',
+            '</div>',
+            '<div class="inventory-meta"></div>'
+          ].join('');
+          row.querySelector('.inventory-name').textContent = item.label;
+          row.querySelector('.inventory-caption').textContent = item.description;
+          const meta = row.querySelector('.inventory-meta');
+          meta.appendChild(makeChip(titleCaseType(item.type), 'type-' + item.type));
+          meta.appendChild(makeChip(item.group));
+          inventoryList.appendChild(row);
+        }
+        if (!items.length) {
+          const note = document.createElement('div');
+          note.className = 'list-note';
+          note.textContent = 'No discoveries match your search yet.';
+          inventoryList.appendChild(note);
+        }
+      }
+
+      function makeChip(text, className) {
+        const chip = document.createElement('span');
+        chip.className = 'chip' + (className ? ' ' + className : '');
+        chip.textContent = text;
+        return chip;
+      }
+
+      function tileLabel(item) {
+        return item.label;
+      }
+
+      function joinedLabels(ids, labelSource) {
+        return ids.map((id) => labelSource[id]?.label || id).join(' + ');
+      }
+
+      function rootSummary(item) {
+        if (item.rootSpec) {
+          const core = CATALOG[item.rootSpec.core]?.label || item.rootSpec.core;
+          const modifiers = joinedLabels(item.rootSpec.modifiers, ROOT_MODIFIERS);
+          return 'Core: ' + core + ' • Roots: ' + modifiers;
+        }
+        if (Array.isArray(item.roots) && item.roots.length) {
+          return 'Roots: ' + joinedLabels(item.roots, CATALOG);
+        }
+        return item.group;
+      }
+
+      function itemFitNote(item) {
+        const parts = [];
+        if (item.type === 'field') {
+          parts.push('Established field.');
+        } else if (item.type === 'root_built') {
+          parts.push('Constructed specialty for this game; not claimed here as a formal standalone discipline.');
+        } else {
+          parts.push('Type: ' + titleCaseType(item.type) + '.');
+        }
+        if (Array.isArray(item.roots) && item.roots.length) {
+          parts.push('Roots: ' + joinedLabels(item.roots, CATALOG) + '.');
+        }
+        if (item.rootSpec) {
+          const core = CATALOG[item.rootSpec.core]?.label || item.rootSpec.core;
+          const modifiers = joinedLabels(item.rootSpec.modifiers, ROOT_MODIFIERS);
+          parts.push('Root path: ' + core + (modifiers ? ' + ' + modifiers : '') + '.');
+        }
+        parts.push('Group: ' + item.group + '.');
+        return parts.join(' ');
+      }
+
+      function renderWorkspace() {
+        if (state.selectedTileId && !state.workspace.some((tile) => tile.id === state.selectedTileId)) {
+          state.selectedTileId = null;
+        }
+        desk.querySelectorAll('.tile').forEach((node) => node.remove());
+        const sorted = [...state.workspace].sort((a, b) => a.z - b.z);
+        for (const tile of sorted) {
+          const item = CATALOG[tile.itemId];
+          if (!item) continue;
+          const pos = clampTilePosition(tile.x, tile.y);
+          tile.x = pos.x;
+          tile.y = pos.y;
+          const node = document.createElement('button');
+          node.type = 'button';
+          node.className = 'tile';
+          node.dataset.tileId = String(tile.id);
+          node.dataset.itemId = item.id;
+          node.tabIndex = 0;
+          node.setAttribute('aria-label', item.label + '. Press Enter for info, S to select, C to combine with a selected tile, or Delete to discard.');
+          node.style.left = pos.x + 'px';
+          node.style.top = pos.y + 'px';
+          node.style.zIndex = String(tile.z);
+          node.innerHTML = [
+            '<div class="tile-label"></div>',
+            '<div class="tile-meta"></div>',
+            '<div class="chip-row"></div>'
+          ].join('');
+          node.querySelector('.tile-label').textContent = tileLabel(item);
+          node.querySelector('.tile-meta').textContent = rootSummary(item);
+          const chips = node.querySelector('.chip-row');
+          chips.appendChild(makeChip(titleCaseType(item.type), 'type-' + item.type));
+          if (item.type !== 'root_built') {
+            chips.appendChild(makeChip(item.group));
+          }
+          node.classList.toggle('keyboard-selected', state.selectedTileId === tile.id);
+          desk.appendChild(node);
+        }
+        const hideDeskHint = state.workspace.length > 0;
+        deskEmptyHint.classList.toggle('hidden', hideDeskHint);
+        deskEmptyHint.hidden = hideDeskHint;
+        deskEmptyHint.setAttribute('aria-hidden', hideDeskHint ? 'true' : 'false');
+      }
+
+      function renderCollection() {
+        collectionGrid.innerHTML = '';
+        const items = sortedDiscoveredItems();
+        for (const item of items) {
+          const card = document.createElement('article');
+          card.className = 'card';
+          card.innerHTML = '<h4></h4><p></p><div class="chip-row" style="margin-top:10px"></div>';
+          card.querySelector('h4').textContent = item.label;
+          card.querySelector('p').textContent = item.description;
+          const chips = card.querySelector('.chip-row');
+          chips.appendChild(makeChip(titleCaseType(item.type), 'type-' + item.type));
+          chips.appendChild(makeChip(item.group));
+          collectionGrid.appendChild(card);
+        }
+      }
+
+      function renderRootLibrary() {
+        rootRules.innerHTML = '';
+        const rules = [
+          'Approved modifier roots: ' + Object.values(ROOT_MODIFIERS).map((entry) => entry.label).join(', ') + '.',
+          'A derived specialty must keep exactly one core starting subject.',
+          'Each derived specialty can carry at most four modifier roots.',
+          'Modifier roots must be curated and cannot silently overwrite another recipe.',
+          'Field + field or derived-specialty + field stacking is not used procedurally here; only curated base-plus-modifier builds are allowed.'
+        ];
+        for (const text of rules) {
+          const box = document.createElement('div');
+          box.className = 'rule';
+          box.textContent = text;
+          rootRules.appendChild(box);
+        }
+
+        rootGrid.innerHTML = '';
+        const roots = ITEM_DEFS.filter((item) => item.rootSpec).sort((a, b) => a.label.localeCompare(b.label));
+        for (const item of roots) {
+          const discovered = state.discovered.has(item.id);
+          const card = document.createElement('article');
+          card.className = 'card' + (discovered ? '' : ' locked');
+          card.innerHTML = '<h4></h4><p></p><div class="chip-row" style="margin-top:10px"></div>';
+          card.querySelector('h4').textContent = item.label + (discovered ? '' : ' • locked');
+          card.querySelector('p').textContent = item.description;
+          const chips = card.querySelector('.chip-row');
+          chips.appendChild(makeChip(titleCaseType(item.type), 'type-' + item.type));
+          chips.appendChild(makeChip(CATALOG[item.rootSpec.core].label, 'type-field'));
+          for (const modifierId of item.rootSpec.modifiers) {
+            chips.appendChild(makeChip(ROOT_MODIFIERS[modifierId]?.label || modifierId, 'type-root_built'));
+          }
+          rootGrid.appendChild(card);
+        }
+      }
+
+      function knownRecipesFor(itemId) {
+        return CURATED_RECIPES.filter((recipe) => recipe.result === itemId);
+      }
+
+      function openInfo(itemId, triggerEl) {
+        const item = CATALOG[itemId];
+        if (!item) return;
+        state.activeInfoId = itemId;
+        infoTitle.textContent = item.label;
+        infoSubtitle.textContent = item.group;
+        infoDescription.textContent = item.description;
+        infoRootNote.textContent = itemFitNote(item);
+        if (item.activity) {
+          infoActivitySection.hidden = false;
+          infoActivity.textContent = item.activity;
+        } else {
+          infoActivitySection.hidden = true;
+          infoActivity.textContent = '';
+        }
+        infoChips.innerHTML = '';
+        infoChips.appendChild(makeChip(titleCaseType(item.type), 'type-' + item.type));
+        infoChips.appendChild(makeChip(item.group));
+        if (Array.isArray(item.roots) && item.roots.length) {
+          for (const rootId of item.roots) {
+            infoChips.appendChild(makeChip(CATALOG[rootId]?.label || rootId, 'type-field'));
+          }
+        }
+        if (item.rootSpec) {
+          infoChips.appendChild(makeChip(CATALOG[item.rootSpec.core].label, 'type-field'));
+          for (const modifierId of item.rootSpec.modifiers) {
+            infoChips.appendChild(makeChip(ROOT_MODIFIERS[modifierId]?.label || modifierId, 'type-root_built'));
+          }
+        }
+        infoRecipes.innerHTML = '';
+        const recipes = knownRecipesFor(itemId);
+        if (!recipes.length) {
+          const note = document.createElement('p');
+          note.className = 'mini-note';
+          note.textContent = STARTING_SET.has(itemId)
+            ? 'This is a starting science, so it begins in your inventory.'
+            : 'No inbound curated recipe is listed for this entry.';
+          infoRecipes.appendChild(note);
+        } else {
+          for (const recipe of recipes) {
+            const row = document.createElement('div');
+            row.className = 'rule';
+            row.textContent = CATALOG[recipe.a].label + ' + ' + CATALOG[recipe.b].label + ' → ' + item.label + '. ' + recipe.reason;
+            infoRecipes.appendChild(row);
+          }
+        }
+        openBackdrop(infoBackdrop, document.getElementById('closeInfoButton'), triggerEl);
+      }
+
+      function closeInfo() {
+        state.activeInfoId = null;
+        closeBackdrop(infoBackdrop);
+      }
+
+      function openCollection(triggerEl) {
+        renderCollection();
+        openBackdrop(collectionBackdrop, document.getElementById('closeCollectionButton'), triggerEl);
+      }
+
+      function closeCollection() {
+        closeBackdrop(collectionBackdrop);
+      }
+
+      function openRoots(triggerEl) {
+        renderRootLibrary();
+        openBackdrop(rootsBackdrop, document.getElementById('closeRootsButton'), triggerEl);
+      }
+
+      function closeRoots() {
+        closeBackdrop(rootsBackdrop);
+      }
+
+      function getFocusableElements(container) {
+        return [...container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])')]
+          .filter((el) => !el.disabled && el.getAttribute('aria-hidden') !== 'true' && !el.closest('.hidden'));
+      }
+
+      function getOpenBackdrop() {
+        return [infoBackdrop, collectionBackdrop, rootsBackdrop].find((node) => node.classList.contains('open')) || null;
+      }
+
+      function openBackdrop(backdrop, initialFocusEl, triggerEl) {
+        const openBackdropNode = getOpenBackdrop();
+        const dialog = backdrop.querySelector('[role="dialog"]');
+        const nextFocusTarget = triggerEl instanceof HTMLElement
+          ? triggerEl
+          : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+        if (openBackdropNode && openBackdropNode !== backdrop) {
+          closeBackdrop(openBackdropNode, { restoreFocus: false, clearStoredFocus: false });
+        }
+        modalState.lastFocused = nextFocusTarget;
+        setAppShellModalState(true);
+        backdrop.hidden = false;
+        backdrop.classList.add('open');
+        backdrop.setAttribute('aria-hidden', 'false');
+        if (dialog) {
+          dialog.hidden = false;
+          dialog.setAttribute('aria-hidden', 'false');
+        }
+        document.body.style.overflow = 'hidden';
+        const focusTarget = initialFocusEl || getFocusableElements(backdrop)[0] || dialog;
+        if (focusTarget) {
+          focusTarget.focus();
+        }
+      }
+
+      function closeBackdrop(backdrop, options = {}) {
+        const { restoreFocus = true, clearStoredFocus = true } = options;
+        const wasOpen = backdrop.classList.contains('open');
+        const dialog = backdrop.querySelector('[role="dialog"]');
+        backdrop.classList.remove('open');
+        backdrop.setAttribute('aria-hidden', 'true');
+        backdrop.hidden = true;
+        if (dialog) {
+          dialog.setAttribute('aria-hidden', 'true');
+          dialog.hidden = true;
+        }
+        if (!getOpenBackdrop()) {
+          setAppShellModalState(false);
+          document.body.style.overflow = '';
+          if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
+            modalState.lastFocused.focus();
+          }
+          if (clearStoredFocus) {
+            modalState.lastFocused = null;
+          }
+        }
+      }
+
+      function discover(itemId) {
+        const isNew = !state.discovered.has(itemId);
+        state.discovered.add(itemId);
+        if (isNew) {
+          pushToast('New discovery', CATALOG[itemId].label + ' added to your permanent inventory.', 'success');
+        } else {
+          pushToast('Created again', CATALOG[itemId].label + ' is already in your collection.', 'success');
+        }
+      }
+
+      function keyboardSpawnPosition() {
+        const bounds = desk.getBoundingClientRect();
+        const index = state.workspace.length;
+        const spreadX = ((index % 4) - 1.5) * 28;
+        const spreadY = ((Math.floor(index / 4) % 3) - 1) * 24;
+        return clampTilePosition((bounds.width - TILE_W) / 2 + spreadX, (bounds.height - TILE_H) / 2 + spreadY);
+      }
+
+      function setSelectedTile(tileId) {
+        state.selectedTileId = state.selectedTileId === tileId ? null : tileId;
+        renderWorkspace();
+      }
+
+      function combineTilesIntoResult(firstTile, secondTile, resultId) {
+        const midpoint = clampTilePosition((firstTile.x + secondTile.x) / 2, (firstTile.y + secondTile.y) / 2);
+        state.workspace = state.workspace.filter((tile) => tile.id !== firstTile.id && tile.id !== secondTile.id);
+        discover(resultId);
+        const newTile = {
+          id: state.nextTileId++,
+          itemId: resultId,
+          x: midpoint.x,
+          y: midpoint.y,
+          z: ++state.zCounter
+        };
+        state.workspace.push(newTile);
+        state.selectedTileId = newTile.id;
+        saveState();
+        renderAll();
+      }
+
+      function keyboardSpawnOrCombine(itemId) {
+        const selectedTile = getWorkspaceTile(state.selectedTileId);
+        if (selectedTile) {
+          const recipe = resolveRecipe(selectedTile.itemId, itemId);
+          if (recipe) {
+            const helperTile = createWorkspaceTile(itemId, selectedTile.x + 18, selectedTile.y + 18, { persist: false, render: false });
+            combineTilesIntoResult(selectedTile, helperTile, recipe.result);
+            return;
+          }
+        }
+        const pos = keyboardSpawnPosition();
+        const tile = createWorkspaceTile(itemId, pos.x, pos.y);
+        state.selectedTileId = tile.id;
+        renderWorkspace();
+        pushToast('Desk copy added', CATALOG[itemId].label + ' was placed on the desk for keyboard play.', 'success');
+      }
+
+      function keyboardCombineSelectedWithTile(targetTileId) {
+        const selectedTile = getWorkspaceTile(state.selectedTileId);
+        const targetTile = getWorkspaceTile(targetTileId);
+        if (!selectedTile || !targetTile || selectedTile.id === targetTile.id) {
+          setSelectedTile(targetTileId);
+          return;
+        }
+        const recipe = resolveRecipe(selectedTile.itemId, targetTile.itemId);
+        if (recipe) {
+          combineTilesIntoResult(selectedTile, targetTile, recipe.result);
+          return;
+        }
+        pushToast('No reaction', CATALOG[selectedTile.itemId].label + ' does not combine meaningfully with ' + CATALOG[targetTile.itemId].label + '.', 'warn');
+      }
+
+      function overlapArea(a, b) {
+        const x = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+        const y = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        return x * y;
+      }
+
+      function findBestOverlapTarget(dragTileId) {
+        const draggedNode = desk.querySelector('.tile[data-tile-id="' + dragTileId + '"]');
+        if (!draggedNode) return null;
+        const draggedRect = draggedNode.getBoundingClientRect();
+        let best = null;
+        for (const other of desk.querySelectorAll('.tile')) {
+          if (other.dataset.tileId === String(dragTileId)) continue;
+          const area = overlapArea(draggedRect, other.getBoundingClientRect());
+          if (area < 900) continue;
+          if (!best || area > best.area) {
+            best = { node: other, area };
+          }
+        }
+        return best ? Number(best.node.dataset.tileId) : null;
+      }
+
+      function trashHit(clientX, clientY) {
+        const rect = trashZone.getBoundingClientRect();
+        return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+      }
+
+      function setTileHighlight(targetTileId, combineRecipe) {
+        desk.querySelectorAll('.tile').forEach((tile) => {
+          tile.classList.remove('combine-target', 'combine-blocked');
+          if (targetTileId && Number(tile.dataset.tileId) === targetTileId) {
+            tile.classList.add(combineRecipe ? 'combine-target' : 'combine-blocked');
+          }
+        });
+      }
+
+      function getWorkspaceTile(tileId) {
+        return state.workspace.find((tile) => tile.id === tileId) || null;
+      }
+
+      function attachLostCaptureHandler(element, pointerId) {
+        if (!element || !element.addEventListener) return;
+        element.addEventListener('lostpointercapture', (event) => {
+          if (state.drag && state.drag.pointerId === pointerId) {
+            finishDrag(event);
+          }
+        }, { once: true });
+      }
+
+      function beginDragFromInventory(itemId, pointerEvent) {
+        const row = pointerEvent.target.closest('.inventory-row');
+        state.drag = {
+          pointerId: pointerEvent.pointerId,
+          source: 'inventory',
+          itemId,
+          tileId: null,
+          startX: pointerEvent.clientX,
+          startY: pointerEvent.clientY,
+          lastClientX: pointerEvent.clientX,
+          lastClientY: pointerEvent.clientY,
+          moved: false,
+          pointerCapturedBy: row
+        };
+        if (row?.setPointerCapture) {
+          row.setPointerCapture(pointerEvent.pointerId);
+          attachLostCaptureHandler(row, pointerEvent.pointerId);
+        }
+      }
+
+      function bringTileToFront(tileId) {
+        const tile = getWorkspaceTile(tileId);
+        if (!tile) return;
+        tile.z = ++state.zCounter;
+        saveState();
+      }
+
+      function beginDragFromWorkspace(tileId, pointerEvent) {
+        const tile = getWorkspaceTile(tileId);
+        const node = desk.querySelector('.tile[data-tile-id="' + tileId + '"]');
+        if (!tile || !node) return;
+        bringTileToFront(tileId);
+        renderWorkspace();
+        const freshNode = desk.querySelector('.tile[data-tile-id="' + tileId + '"]');
+        freshNode.classList.add('dragging');
+        if (freshNode.setPointerCapture) {
+          freshNode.setPointerCapture(pointerEvent.pointerId);
+          attachLostCaptureHandler(freshNode, pointerEvent.pointerId);
+        }
+        const freshRect = freshNode.getBoundingClientRect();
+        state.drag = {
+          pointerId: pointerEvent.pointerId,
+          source: 'workspace',
+          itemId: tile.itemId,
+          tileId,
+          offsetX: pointerEvent.clientX - freshRect.left,
+          offsetY: pointerEvent.clientY - freshRect.top,
+          startX: pointerEvent.clientX,
+          startY: pointerEvent.clientY,
+          lastClientX: pointerEvent.clientX,
+          lastClientY: pointerEvent.clientY,
+          moved: false,
+          pointerCapturedBy: freshNode
+        };
+      }
+
+      function updateDraggedTile(pointerEvent) {
+        if (!state.drag) return;
+        if (Number.isFinite(pointerEvent.clientX) && Number.isFinite(pointerEvent.clientY)) {
+          state.drag.lastClientX = pointerEvent.clientX;
+          state.drag.lastClientY = pointerEvent.clientY;
+        }
+        if (state.drag.source === 'inventory' && !state.drag.tileId) {
+          const dx = pointerEvent.clientX - state.drag.startX;
+          const dy = pointerEvent.clientY - state.drag.startY;
+          if (Math.hypot(dx, dy) <= 6) {
+            return;
+          }
+          const deskRect = desk.getBoundingClientRect();
+          const pos = clampTilePosition(pointerEvent.clientX - deskRect.left - TILE_W / 2, pointerEvent.clientY - deskRect.top - TILE_H / 2);
+          const tile = createWorkspaceTile(state.drag.itemId, pos.x, pos.y, { persist: false, render: true });
+          state.drag.tileId = tile.id;
+          state.drag.moved = true;
+        }
+        const tile = getWorkspaceTile(state.drag.tileId);
+        if (!tile) return;
+        if (state.drag.source === 'workspace' && !state.drag.moved) {
+          const dx = pointerEvent.clientX - state.drag.startX;
+          const dy = pointerEvent.clientY - state.drag.startY;
+          if (Math.hypot(dx, dy) <= 6) {
+            return;
+          }
+          state.drag.moved = true;
+        }
+        const deskRect = desk.getBoundingClientRect();
+        const offsetX = state.drag.source === 'workspace' ? state.drag.offsetX : TILE_W / 2;
+        const offsetY = state.drag.source === 'workspace' ? state.drag.offsetY : TILE_H / 2;
+        const pos = clampTilePosition(pointerEvent.clientX - deskRect.left - offsetX, pointerEvent.clientY - deskRect.top - offsetY);
+        tile.x = pos.x;
+        tile.y = pos.y;
+        if (state.drag.source !== 'workspace' && !state.drag.moved) {
+          const dx = pointerEvent.clientX - state.drag.startX;
+          const dy = pointerEvent.clientY - state.drag.startY;
+          state.drag.moved = Math.hypot(dx, dy) > 6;
+        }
+        renderWorkspace();
+        const draggingNode = desk.querySelector('.tile[data-tile-id="' + state.drag.tileId + '"]');
+        if (draggingNode) {
+          draggingNode.classList.add('dragging');
+        }
+
+        const targetTileId = findBestOverlapTarget(state.drag.tileId);
+        const targetTile = targetTileId ? getWorkspaceTile(targetTileId) : null;
+        const recipe = targetTile ? resolveRecipe(tile.itemId, targetTile.itemId) : null;
+        state.drag.targetTileId = targetTileId;
+        state.drag.targetRecipe = recipe || null;
+        setTileHighlight(targetTileId, recipe);
+        trashZone.classList.toggle('active', trashHit(pointerEvent.clientX, pointerEvent.clientY));
+      }
+
+      function finishDrag(pointerEvent) {
+        if (!state.drag) return;
+        const drag = state.drag;
+        const draggedTile = getWorkspaceTile(drag.tileId);
+        const wasClick = !drag.moved;
+        const targetTile = drag.targetTileId ? getWorkspaceTile(drag.targetTileId) : null;
+        const recipe = drag.targetRecipe;
+        const pointerX = Number.isFinite(pointerEvent.clientX) ? pointerEvent.clientX : drag.lastClientX;
+        const pointerY = Number.isFinite(pointerEvent.clientY) ? pointerEvent.clientY : drag.lastClientY;
+        const hasPointerCoords = Number.isFinite(pointerX) && Number.isFinite(pointerY);
+        const onTrash = hasPointerCoords ? trashHit(pointerX, pointerY) : false;
+        setTileHighlight(null, null);
+        trashZone.classList.remove('active');
+
+        if (drag.pointerCapturedBy && drag.pointerCapturedBy.hasPointerCapture && drag.pointerCapturedBy.hasPointerCapture(drag.pointerId)) {
+          drag.pointerCapturedBy.releasePointerCapture(drag.pointerId);
+        }
+
+        if (!draggedTile) {
+          if (drag.source === 'inventory' && !drag.moved) {
+            state.drag = null;
+            openInfo(drag.itemId, drag.pointerCapturedBy);
+            return;
+          }
+          state.drag = null;
+          saveState();
+          renderWorkspace();
+          return;
+        }
+
+        if (wasClick) {
+          if (drag.source === 'inventory') {
+            removeWorkspaceTile(drag.tileId);
+            openInfo(drag.itemId, drag.pointerCapturedBy);
+          } else {
+            openInfo(drag.itemId, drag.pointerCapturedBy);
+            saveState();
+            renderWorkspace();
+          }
+          state.drag = null;
+          return;
+        }
+
+        if (onTrash) {
+          removeWorkspaceTile(drag.tileId);
+          pushToast('Discarded', CATALOG[drag.itemId].label + ' was removed from the desk.', 'warn');
+          state.drag = null;
+          return;
+        }
+
+        if (targetTile) {
+          if (recipe) {
+            state.drag = null;
+            combineTilesIntoResult(draggedTile, targetTile, recipe.result);
+            return;
+          }
+          pushToast('No reaction', CATALOG[draggedTile.itemId].label + ' does not combine meaningfully with ' + CATALOG[targetTile.itemId].label + '.', 'warn');
+        }
+
+        saveState();
+        renderWorkspace();
+        state.drag = null;
+      }
+
+      function renderAll() {
+        renderStatusBar();
+        renderInventory();
+        renderWorkspace();
+        renderCollection();
+        renderRootLibrary();
+      }
+
+      function handleDeskPointerMove(event) {
+        if (!state.drag || state.drag.pointerId !== event.pointerId) return;
+        updateDraggedTile(event);
+      }
+
+      function handleDeskPointerUp(event) {
+        if (!state.drag || state.drag.pointerId !== event.pointerId) return;
+        finishDrag(event);
+      }
+
+      function installEvents() {
+        inventorySearch.addEventListener('input', () => {
+          state.search = inventorySearch.value.trim().toLowerCase();
+          renderInventory();
+        });
+
+        inventoryList.addEventListener('pointerdown', (event) => {
+          const row = event.target.closest('.inventory-row');
+          if (!row) return;
+          const itemId = row.dataset.itemId;
+          beginDragFromInventory(itemId, event);
+        });
+
+        desk.addEventListener('pointerdown', (event) => {
+          const tile = event.target.closest('.tile');
+          if (!tile) return;
+          beginDragFromWorkspace(Number(tile.dataset.tileId), event);
+        });
+
+        document.addEventListener('pointermove', handleDeskPointerMove);
+        document.addEventListener('pointerup', handleDeskPointerUp);
+        document.addEventListener('pointercancel', handleDeskPointerUp);
+        document.getElementById('openCollectionButton').addEventListener('click', (event) => openCollection(event.currentTarget));
+        document.getElementById('closeCollectionButton').addEventListener('click', closeCollection);
+        document.getElementById('openRootsButton').addEventListener('click', (event) => openRoots(event.currentTarget));
+        document.getElementById('closeRootsButton').addEventListener('click', closeRoots);
+        document.getElementById('closeInfoButton').addEventListener('click', closeInfo);
+        document.getElementById('clearDeskButton').addEventListener('click', () => {
+          clearDesk();
+          pushToast('Desk cleared', 'Workspace tiles were removed, but your inventory is safe.', 'warn');
+        });
+        document.getElementById('resetGameButton').addEventListener('click', resetGame);
+
+        infoBackdrop.addEventListener('click', (event) => {
+          if (event.target === infoBackdrop) closeInfo();
+        });
+        collectionBackdrop.addEventListener('click', (event) => {
+          if (event.target === collectionBackdrop) closeCollection();
+        });
+        rootsBackdrop.addEventListener('click', (event) => {
+          if (event.target === rootsBackdrop) closeRoots();
+        });
+
+        document.addEventListener('keydown', (event) => {
+          const activeBackdrop = getOpenBackdrop();
+          if (activeBackdrop && event.key === 'Tab') {
+            const focusables = getFocusableElements(activeBackdrop);
+            if (focusables.length) {
+              const first = focusables[0];
+              const last = focusables[focusables.length - 1];
+              const activeEl = document.activeElement;
+              const activeInList = focusables.includes(activeEl);
+              if (event.shiftKey && (!activeInList || activeEl === first)) {
+                event.preventDefault();
+                last.focus();
+              } else if (!event.shiftKey && (!activeInList || activeEl === last)) {
+                event.preventDefault();
+                first.focus();
+              }
+            }
+          }
+          if (event.key === 'Escape') {
+            if (activeBackdrop) {
+              if (activeBackdrop === infoBackdrop) {
+                closeInfo();
+              } else {
+                closeBackdrop(activeBackdrop);
+              }
+              return;
+            }
+          }
+          if (activeBackdrop) {
+            return;
+          }
+          if ((event.key === 'Enter' || event.key === ' ') && document.activeElement === desk) {
+            event.preventDefault();
+            const firstTile = desk.querySelector('.tile');
+            const firstInventory = inventoryList.querySelector('.inventory-row');
+            if (firstTile) {
+              firstTile.focus();
+            } else if (firstInventory) {
+              firstInventory.focus();
+            }
+          }
+          if (event.shiftKey && (event.key === 'A' || event.key === 'a')) {
+            const audit = runAudit(true);
+            renderStatusBar();
+            pushToast('Audit rerun', 'Audit status: ' + audit.status + '.', audit.status === 'PASS' ? 'success' : 'warn');
+          }
+          if ((event.key === 'Enter' || event.key === ' ') && document.activeElement?.classList.contains('inventory-row')) {
+            event.preventDefault();
+            keyboardSpawnOrCombine(document.activeElement.dataset.itemId);
+          }
+          if ((event.key === 'i' || event.key === 'I') && document.activeElement?.classList.contains('inventory-row')) {
+            event.preventDefault();
+            openInfo(document.activeElement.dataset.itemId, document.activeElement);
+          }
+          if ((event.key === 'Enter' || event.key === ' ') && document.activeElement?.classList.contains('tile')) {
+            event.preventDefault();
+            openInfo(document.activeElement.dataset.itemId, document.activeElement);
+          }
+          if ((event.key === 's' || event.key === 'S') && document.activeElement?.classList.contains('tile')) {
+            event.preventDefault();
+            setSelectedTile(Number(document.activeElement.dataset.tileId));
+          }
+          if ((event.key === 'c' || event.key === 'C') && document.activeElement?.classList.contains('tile')) {
+            event.preventDefault();
+            keyboardCombineSelectedWithTile(Number(document.activeElement.dataset.tileId));
+          }
+          if ((event.key === 'Delete' || event.key === 'Backspace') && document.activeElement?.classList.contains('tile')) {
+            event.preventDefault();
+            removeWorkspaceTile(Number(document.activeElement.dataset.tileId));
+          }
+        });
+      }
+
+      registerRecipes();
+      loadState();
+      installEvents();
+      runAudit(true);
+      renderAll();
+      window.requestAnimationFrame(() => {
+        if (normalizeWorkspacePositions()) {
+          renderWorkspace();
+        }
+      });
+    }());
+  </script>
+</body>
+</html>
