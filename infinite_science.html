@@ -1605,7 +1605,10 @@
           node.classList.toggle('keyboard-selected', state.selectedTileId === tile.id);
           desk.appendChild(node);
         }
-        deskEmptyHint.classList.toggle('hidden', state.workspace.length > 0);
+        const hideDeskHint = state.workspace.length > 0;
+        deskEmptyHint.classList.toggle('hidden', hideDeskHint);
+        deskEmptyHint.hidden = hideDeskHint;
+        deskEmptyHint.setAttribute('aria-hidden', hideDeskHint ? 'true' : 'false');
       }
 
       function renderCollection() {
@@ -2048,6 +2051,7 @@
             return;
           }
           state.drag = null;
+          saveState();
           renderWorkspace();
           return;
         }
