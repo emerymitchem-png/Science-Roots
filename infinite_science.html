@@ -631,8 +631,8 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
-    <section class="sheet">
+  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
+    <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="infoTitle">Discovery</h3>
@@ -658,8 +658,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
-    <section class="modal">
+  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" hidden>
+    <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
@@ -673,8 +673,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
-    <section class="modal">
+  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" hidden>
+    <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
@@ -1777,8 +1777,10 @@
         renderWorkspace();
         const freshNode = desk.querySelector('.tile[data-tile-id="' + tileId + '"]');
         freshNode.classList.add('dragging');
-        freshNode.setPointerCapture(pointerEvent.pointerId);
-        attachLostCaptureHandler(freshNode, pointerEvent.pointerId);
+        if (freshNode.setPointerCapture) {
+          freshNode.setPointerCapture(pointerEvent.pointerId);
+          attachLostCaptureHandler(freshNode, pointerEvent.pointerId);
+        }
         const freshRect = freshNode.getBoundingClientRect();
         state.drag = {
           pointerId: pointerEvent.pointerId,
@@ -1885,19 +1887,8 @@
 
         if (targetTile) {
           if (recipe) {
-            const midpoint = clampTilePosition((draggedTile.x + targetTile.x) / 2, (draggedTile.y + targetTile.y) / 2);
-            state.workspace = state.workspace.filter((tile) => tile.id !== draggedTile.id && tile.id !== targetTile.id);
-            discover(recipe.result);
-            state.workspace.push({
-              id: state.nextTileId++,
-              itemId: recipe.result,
-              x: midpoint.x,
-              y: midpoint.y,
-              z: ++state.zCounter
-            });
-            saveState();
             state.drag = null;
-            renderAll();
+            combineTilesIntoResult(draggedTile, targetTile, recipe.result);
             return;
           }
           pushToast('No reaction', CATALOG[draggedTile.itemId].label + ' does not combine meaningfully with ' + CATALOG[targetTile.itemId].label + '.', 'warn');
