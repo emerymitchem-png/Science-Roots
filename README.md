@@ -10,6 +10,6 @@ Science-Roots now includes **Infinite Science**, a self-contained educational br
 4. Click any tile to open its information panel.
 5. Use **Collection**, **Root Library**, **Clear Desk**, and **Reset Game** from the toolbar as needed.
 
-Keyboard support: first tab to the desk or inventory. When the desk is focused, press **Enter** or **Space** to move into the first desk tile if one is present. Focus an inventory item and press **Enter** to place it on the desk (or **I** for info). Focus a desk tile and press **S** to select it, **C** on another tile to combine, **Enter** for info, or **Delete**/**Backspace** to discard it. In debug mode (`#debug` in the URL), press **Shift + Alt + A** to rerun the development audit.
+Keyboard support: first tab to the desk or inventory. When the desk is focused, press **Enter** or **Space** to move into the first desk tile if one is present. Focus an inventory item and press **Enter** to place it on the desk (or **I** for info); if a desk tile is already selected, that same **Enter** action combines the inventory item with the selected tile when a valid recipe exists. Focus a desk tile and press **S** to select it, **C** on another tile to combine, **Enter** for info, or **Delete**/**Backspace** to discard it. In debug mode (`#debug` in the URL), press **Shift + Alt + A** to rerun the development audit.
 
 Progress and desk state are saved locally in your browser with `localStorage`.

@@ -631,8 +631,8 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="modal-backdrop" id="infoBackdrop" aria-hidden="true" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
-    <section class="sheet">
+  <div class="modal-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
+    <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="infoTitle">Discovery</h3>
@@ -658,8 +658,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
-    <section class="modal">
+  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" hidden>
+    <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
@@ -673,8 +673,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
-    <section class="modal">
+  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" hidden>
+    <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
@@ -1148,7 +1148,14 @@
           changed = false;
           for (const recipe of CURATED_RECIPES) {
             if (!CATALOG[recipe.a] || !CATALOG[recipe.b] || !CATALOG[recipe.result]) continue;
-            if (reachable.has(recipe.a) && reachable.has(recipe.b) && !reachable.has(recipe.result)) {
+            const resolvedRecipe = resolveRecipe(recipe.a, recipe.b);
+            if (
+              reachable.has(recipe.a) &&
+              reachable.has(recipe.b) &&
+              resolvedRecipe &&
+              resolvedRecipe.result === recipe.result &&
+              !reachable.has(recipe.result)
+            ) {
               reachable.add(recipe.result);
               changed = true;
             }
@@ -1254,8 +1261,9 @@
               });
           }
           const maxTileId = state.workspace.reduce((maxId, tile) => Math.max(maxId, tile.id), 0);
+          const maxTileZ = state.workspace.reduce((maxZ, tile) => Math.max(maxZ, tile.z), 0);
           state.nextTileId = Math.max(maxTileId + 1, Number(parsed.nextTileId) || 1, 1);
-          state.zCounter = Math.max(1, Number(parsed.zCounter) || state.workspace.length + 1);
+          state.zCounter = Math.max(1, Number(parsed.zCounter) || maxTileZ);
         } catch (error) {
           console.warn('Could not load saved Infinite Science state.', error);
         }
@@ -1664,7 +1672,7 @@
         backdrop.classList.add('open');
         backdrop.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
-        const focusTarget = backdrop;
+        const focusTarget = backdrop.querySelector('[role="dialog"]') || backdrop;
         if (focusTarget) {
           focusTarget.focus();
         }
