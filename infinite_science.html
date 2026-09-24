@@ -651,6 +651,10 @@
         <h4>How it fits</h4>
         <p id="infoRootNote"></p>
       </div>
+      <div class="info-section" id="infoActivitySection" hidden>
+        <h4>What scientists do</h4>
+        <p id="infoActivity"></p>
+      </div>
       <div class="info-section">
         <h4>Known recipes</h4>
         <div id="infoRecipes"></div>
@@ -823,22 +827,28 @@
         { id: 'magnetism', label: 'Magnetism', type: 'concept', group: 'Physical Science', description: 'A phenomenon arising from moving charges and magnetic fields.' },
         { id: 'vibration', label: 'Vibration', type: 'concept', group: 'Physical Science', description: 'A repeated back-and-forth motion around an equilibrium state.' },
 
-        { id: 'microbiology', label: 'Microbiology', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of microscopic life and its processes.', rootSpec: { core: 'biology', modifiers: ['microscopic'] } },
-        { id: 'paleomicrobiology', label: 'Paleomicrobiology', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of ancient microorganisms and their traces.', rootSpec: { core: 'biology', modifiers: ['microscopic', 'ancient'] } },
-        { id: 'exopaleomicrobiology', label: 'Exopaleomicrobiology', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of possible ancient microbial traces beyond Earth.', rootSpec: { core: 'biology', modifiers: ['microscopic', 'ancient', 'exoplanetary'] } },
-        { id: 'geomicrobiology', label: 'Geomicrobiology', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of interactions between microorganisms and Earth materials.', rootSpec: { core: 'biology', modifiers: ['microscopic', 'earth_context'] } },
-        { id: 'genetics_field', label: 'Genetics', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of genes, inheritance, and variation.', rootSpec: { core: 'biology', modifiers: ['genetic'] } },
-        { id: 'ecology_field', label: 'Ecology', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of interactions among organisms and environments.', rootSpec: { core: 'biology', modifiers: ['ecological'] } },
-        { id: 'marine_biology', label: 'Marine Biology', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of life in ocean environments.', rootSpec: { core: 'biology', modifiers: ['marine'] } },
-        { id: 'astrobiology', label: 'Astrobiology', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of life in the context of worlds beyond Earth.', rootSpec: { core: 'biology', modifiers: ['exoplanetary'] } },
-        { id: 'geochemistry', label: 'Geochemistry', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of chemical processes in Earth materials and systems.', rootSpec: { core: 'chemistry', modifiers: ['earth_context'] } },
-        { id: 'atmospheric_chemistry', label: 'Atmospheric Chemistry', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of chemical processes in planetary atmospheres.', rootSpec: { core: 'chemistry', modifiers: ['atmospheric'] } },
-        { id: 'astrophysics', label: 'Astrophysics', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of stars and the universe using physical laws.', rootSpec: { core: 'physics', modifiers: ['stellar'] } },
-        { id: 'geophysics', label: 'Geophysics', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of Earth systems using physical principles.', rootSpec: { core: 'physics', modifiers: ['earth_context'] } },
-        { id: 'oceanography', label: 'Oceanography', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of oceans as physical, chemical, and biological systems.', rootSpec: { core: 'earth_science', modifiers: ['marine'] } },
-        { id: 'climatology', label: 'Climatology', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of climate patterns and processes.', rootSpec: { core: 'earth_science', modifiers: ['atmospheric'] } },
-        { id: 'observational_astronomy', label: 'Observational Astronomy', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of the cosmos through direct observation and measurement.', rootSpec: { core: 'astronomy', modifiers: ['observational'] } },
-        { id: 'computational_astronomy', label: 'Computational Astronomy', type: 'root_built', group: 'Root-Built Specialty', description: 'The study of astronomical systems through calculation, code, and simulation.', rootSpec: { core: 'astronomy', modifiers: ['computational'] } }
+        { id: 'biochemistry', label: 'Biochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies the chemical substances and reactions of living systems.', roots: ['biology', 'chemistry'], activity: 'Biochemists measure enzymes, proteins, and metabolic pathways to explain how cells store energy and build structures.' },
+        { id: 'biophysics', label: 'Biophysics', type: 'field', group: 'Interdisciplinary Field', description: 'The field that uses physical principles and tools to study living systems.', roots: ['biology', 'physics'], activity: 'Biophysicists model how membranes, biomolecules, and molecular machines move, fold, and transfer energy.' },
+        { id: 'geobiology', label: 'Geobiology', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies how life and Earth processes influence one another across environments and time.', roots: ['biology', 'earth_science'], activity: 'Geobiologists investigate how organisms reshape sediments, minerals, soils, and the chemical conditions around them.' },
+        { id: 'physical_chemistry', label: 'Physical Chemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that explains chemical systems using the laws of physics, including energy, motion, and structure.', roots: ['physics', 'chemistry'], activity: 'Physical chemists calculate reaction rates, molecular energies, and how light and heat change matter.' },
+        { id: 'astrochemistry', label: 'Astrochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies chemical processes and molecules in space and on other worlds.', roots: ['chemistry', 'astronomy'], activity: 'Astrochemists use spectra and laboratory simulations to identify molecules in interstellar clouds, disks, and atmospheres.' },
+        { id: 'planetary_science', label: 'Planetary Science', type: 'field', group: 'Earth & Space Field', description: 'The field that studies planets, moons, and other worlds as evolving systems.', roots: ['earth_science', 'astronomy'], activity: 'Planetary scientists compare surfaces, atmospheres, interiors, and impacts using spacecraft data, samples, and telescopes.' },
+        { id: 'microbiology', label: 'Microbiology', type: 'field', group: 'Life Science Field', description: 'The field that studies microscopic organisms and viruses and how they function.', rootSpec: { core: 'biology', modifiers: ['microscopic'] }, activity: 'Microbiologists culture microbes, image cells, and test how tiny organisms grow, interact, and alter their surroundings.' },
+        { id: 'paleomicrobiology', label: 'Paleomicrobiology', type: 'field', group: 'Life Science Field', description: 'The field that studies ancient microorganisms and their traces in older environments.', rootSpec: { core: 'biology', modifiers: ['microscopic', 'ancient'] }, activity: 'Paleomicrobiologists analyze fossilized textures, biomarkers, and ancient sediments for evidence of past microbial life.' },
+        { id: 'exopaleomicrobiology', label: 'Exopaleomicrobiology', type: 'root_built', group: 'Constructed Specialty', description: 'A constructed specialty for this game about possible ancient microbial traces beyond Earth.', rootSpec: { core: 'biology', modifiers: ['microscopic', 'ancient', 'exoplanetary'] }, activity: 'In this game, exopaleomicrobiologists would compare rock textures and chemical traces on other worlds while looking for ancient microbial hints.' },
+        { id: 'geomicrobiology', label: 'Geomicrobiology', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies interactions between microorganisms and Earth materials.', rootSpec: { core: 'biology', modifiers: ['microscopic', 'earth_context'] }, activity: 'Geomicrobiologists study how microbes weather rocks, cycle elements, and leave signatures in sediments and minerals.' },
+        { id: 'genetics_field', label: 'Genetics', type: 'field', group: 'Life Science Field', description: 'The field that studies genes, inheritance, and variation.', rootSpec: { core: 'biology', modifiers: ['genetic'] }, activity: 'Geneticists trace inheritance patterns, compare DNA sequences, and test how genes influence traits.' },
+        { id: 'ecology_field', label: 'Ecology', type: 'field', group: 'Life Science Field', description: 'The field that studies interactions among organisms and environments.', rootSpec: { core: 'biology', modifiers: ['ecological'] }, activity: 'Ecologists monitor populations, habitats, and energy flow to explain how living communities change through time.' },
+        { id: 'marine_biology', label: 'Marine Biology', type: 'field', group: 'Life Science Field', description: 'The field that studies life in ocean environments.', rootSpec: { core: 'biology', modifiers: ['marine'] }, activity: 'Marine biologists sample organisms in oceans, reefs, and coasts to study adaptation, food webs, and biodiversity.' },
+        { id: 'astrobiology', label: 'Astrobiology', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies the origin, evolution, distribution, and possible future of life in the universe.', roots: ['biology', 'astronomy'], rootSpec: { core: 'biology', modifiers: ['exoplanetary'] }, activity: 'Astrobiologists investigate habitability, biosignatures, and how life-related chemistry behaves in space-like environments.' },
+        { id: 'geochemistry', label: 'Geochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies the chemical composition of Earth materials and the reactions that change them.', roots: ['chemistry', 'earth_science'], rootSpec: { core: 'chemistry', modifiers: ['earth_context'] }, activity: 'Geochemists measure elements and isotopes in rocks, water, and gases to track Earth processes and material cycling.' },
+        { id: 'atmospheric_chemistry', label: 'Atmospheric Chemistry', type: 'field', group: 'Earth & Space Field', description: 'The field that studies chemical processes in planetary atmospheres.', rootSpec: { core: 'chemistry', modifiers: ['atmospheric'] }, activity: 'Atmospheric chemists examine gases, aerosols, and reactions that shape air quality, climate, and planetary skies.' },
+        { id: 'astrophysics', label: 'Astrophysics', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies stars, galaxies, and the universe using physical laws.', roots: ['physics', 'astronomy'], rootSpec: { core: 'physics', modifiers: ['stellar'] }, activity: 'Astrophysicists use observations and equations to explain gravity, radiation, stellar structure, and cosmic evolution.' },
+        { id: 'geophysics', label: 'Geophysics', type: 'field', group: 'Earth & Space Field', description: 'The field that applies physical principles to Earth’s interior, surface, oceans, and atmosphere.', roots: ['physics', 'earth_science'], rootSpec: { core: 'physics', modifiers: ['earth_context'] }, activity: 'Geophysicists interpret seismic waves, gravity, magnetism, and heat flow to study Earth systems.' },
+        { id: 'oceanography', label: 'Oceanography', type: 'field', group: 'Earth & Space Field', description: 'The field that studies oceans as physical, chemical, biological, and geological systems.', rootSpec: { core: 'earth_science', modifiers: ['marine'] }, activity: 'Oceanographers measure currents, chemistry, ecosystems, and seafloor processes across the oceans.' },
+        { id: 'climatology', label: 'Climatology', type: 'field', group: 'Earth & Space Field', description: 'The field that studies long-term climate patterns and the processes that shape them.', rootSpec: { core: 'earth_science', modifiers: ['atmospheric'] }, activity: 'Climatologists analyze temperature, precipitation, winds, and feedbacks to explain climate patterns and change.' },
+        { id: 'observational_astronomy', label: 'Observational Astronomy', type: 'field', group: 'Earth & Space Field', description: 'The field that studies the cosmos through direct observation and measurement.', rootSpec: { core: 'astronomy', modifiers: ['observational'] }, activity: 'Observational astronomers collect light and other signals with telescopes to identify and compare distant objects.' },
+        { id: 'computational_astronomy', label: 'Computational Astronomy', type: 'field', group: 'Earth & Space Field', description: 'The field that studies astronomical systems through calculation, code, and simulation.', rootSpec: { core: 'astronomy', modifiers: ['computational'] }, activity: 'Computational astronomers build simulations and data pipelines to model orbits, stars, galaxies, and surveys.' }
       ];
 
       const ROOT_MODIFIERS = {
@@ -857,16 +867,27 @@
       };
 
       const CURATED_RECIPES = [
-        { a: 'biology', b: 'physics', result: 'scale', reason: 'Comparing living systems to physical behavior foregrounds the idea of scale.', reserved: true },
-        { a: 'biology', b: 'chemistry', result: 'molecule', reason: 'Living systems depend on molecules built from chemistry.', reserved: true },
-        { a: 'biology', b: 'earth_science', result: 'habitat', reason: 'Life always exists within environmental settings and resources.', reserved: true },
-        { a: 'biology', b: 'astronomy', result: 'habitability', reason: 'Bringing life into space raises the question of where life-friendly conditions exist.', reserved: true },
-        { a: 'physics', b: 'chemistry', result: 'matter', reason: 'Physics and chemistry both begin with the behavior of matter.', reserved: true },
-        { a: 'physics', b: 'earth_science', result: 'motion', reason: 'Earth systems are constantly shaped by movement and force.', reserved: true },
-        { a: 'physics', b: 'astronomy', result: 'gravity', reason: 'Physics and astronomy meet naturally in the study of gravitational motion.', reserved: true },
-        { a: 'chemistry', b: 'earth_science', result: 'mineral', reason: 'Chemistry explains the composition and structure of minerals in Earth materials.', reserved: true },
-        { a: 'chemistry', b: 'astronomy', result: 'spectrum', reason: 'Astronomy depends on chemical signatures found in spectra.', reserved: true },
-        { a: 'earth_science', b: 'astronomy', result: 'planet', reason: 'Earth science is one path to understanding planets as physical worlds.', reserved: true },
+        { a: 'biology', b: 'physics', result: 'biophysics', reason: 'Biology and physics combine into biophysics, which studies living systems with physical ideas and tools.', reserved: true },
+        { a: 'biology', b: 'chemistry', result: 'biochemistry', reason: 'Biology and chemistry combine into biochemistry, the chemistry of living systems.', reserved: true },
+        { a: 'biology', b: 'earth_science', result: 'geobiology', reason: 'Biology and Earth science combine into geobiology, which studies life and planetary environments together.', reserved: true },
+        { a: 'biology', b: 'astronomy', result: 'astrobiology', reason: 'Biology and astronomy combine into astrobiology, the study of life in a cosmic context.', reserved: true },
+        { a: 'physics', b: 'chemistry', result: 'physical_chemistry', reason: 'Physics and chemistry combine into physical chemistry, which explains chemical behavior with physical laws.', reserved: true },
+        { a: 'physics', b: 'earth_science', result: 'geophysics', reason: 'Physics and Earth science combine into geophysics, which studies Earth systems with physical methods.', reserved: true },
+        { a: 'physics', b: 'astronomy', result: 'astrophysics', reason: 'Physics and astronomy combine into astrophysics, which explains the universe with physical laws.', reserved: true },
+        { a: 'chemistry', b: 'earth_science', result: 'geochemistry', reason: 'Chemistry and Earth science combine into geochemistry, which studies the chemistry of Earth materials.', reserved: true },
+        { a: 'chemistry', b: 'astronomy', result: 'astrochemistry', reason: 'Chemistry and astronomy combine into astrochemistry, which studies molecules and reactions in space.', reserved: true },
+        { a: 'earth_science', b: 'astronomy', result: 'planetary_science', reason: 'Earth science and astronomy combine into planetary science, which compares planets and other worlds as systems.', reserved: true },
+
+        { a: 'biology', b: 'biophysics', result: 'scale', reason: 'Biophysics often connects living systems across molecular, cellular, and organismal scales.' },
+        { a: 'biochemistry', b: 'chemistry', result: 'molecule', reason: 'Biochemistry keeps attention on molecules as the chemical units of life.' },
+        { a: 'geobiology', b: 'earth_science', result: 'habitat', reason: 'Geobiology highlights that living things occupy specific environmental settings and resources.' },
+        { a: 'astrobiology', b: 'astronomy', result: 'habitability', reason: 'Astrobiology naturally asks which worlds can sustain life-friendly conditions.' },
+        { a: 'physical_chemistry', b: 'physics', result: 'matter', reason: 'Physical chemistry explains matter by linking substances to energy, motion, and structure.' },
+        { a: 'geophysics', b: 'physics', result: 'motion', reason: 'Geophysics studies moving Earth materials, waves, and forces throughout the planet.' },
+        { a: 'astrophysics', b: 'physics', result: 'gravity', reason: 'Astrophysics depends on gravity to explain orbits, stars, and structure in the universe.' },
+        { a: 'geochemistry', b: 'earth_science', result: 'mineral', reason: 'Geochemistry helps explain how minerals form, transform, and store elements in Earth materials.' },
+        { a: 'astrochemistry', b: 'astronomy', result: 'spectrum', reason: 'Astrochemistry relies on spectra to identify molecules in distant environments.' },
+        { a: 'planetary_science', b: 'astronomy', result: 'planet', reason: 'Planetary science focuses directly on planets and related worlds as scientific objects.' },
 
         { a: 'physics', b: 'scale', result: 'microscopic', reason: 'Physical measurement across scales helps define the microscopic realm.' },
         { a: 'chemistry', b: 'matter', result: 'atom', reason: 'Chemistry explains matter by reasoning about atoms and their interactions.' },
@@ -997,6 +1018,28 @@
       const DUPLICATE_RECIPE_PAIRS = [];
       const INVALID_RECIPE_REFERENCES = [];
       const RESERVED_PAIR_CONFLICTS = [];
+      const RESERVED_PAIR_EXPECTATIONS = [
+        { a: 'biology', b: 'chemistry', result: 'biochemistry' },
+        { a: 'biology', b: 'physics', result: 'biophysics' },
+        { a: 'biology', b: 'earth_science', result: 'geobiology' },
+        { a: 'biology', b: 'astronomy', result: 'astrobiology' },
+        { a: 'physics', b: 'chemistry', result: 'physical_chemistry' },
+        { a: 'physics', b: 'earth_science', result: 'geophysics' },
+        { a: 'physics', b: 'astronomy', result: 'astrophysics' },
+        { a: 'chemistry', b: 'earth_science', result: 'geochemistry' },
+        { a: 'chemistry', b: 'astronomy', result: 'astrochemistry' },
+        { a: 'earth_science', b: 'astronomy', result: 'planetary_science' }
+      ];
+      const ROOT_REGRESSION_CASES = [
+        { label: 'Biology + Microscopic', a: 'biology', b: 'microscopic', expected: 'microbiology' },
+        { label: 'Microbiology + Ancient', a: 'microbiology', b: 'ancient', expected: 'paleomicrobiology' },
+        { label: 'Paleomicrobiology + Exoplanetary', a: 'paleomicrobiology', b: 'exoplanetary', expected: 'exopaleomicrobiology' },
+        { label: 'Microbiology + Earth Context', a: 'microbiology', b: 'earth_context', expected: 'geomicrobiology' },
+        { label: 'Biochemistry + Exoplanetary', a: 'biochemistry', b: 'exoplanetary', expected: null },
+        { label: 'Biogeochemistry + Microscopic', a: 'biogeochemistry', b: 'microscopic', expected: null },
+        { label: 'Geophysics + Astrochemistry', a: 'geophysics', b: 'astrochemistry', expected: null },
+        { label: 'Astrophysics + Geochemistry', a: 'astrophysics', b: 'geochemistry', expected: null }
+      ];
 
       const state = {
         discovered: new Set(STARTING_ITEM_IDS),
@@ -1028,6 +1071,8 @@
       const infoChips = document.getElementById('infoChips');
       const infoDescription = document.getElementById('infoDescription');
       const infoRootNote = document.getElementById('infoRootNote');
+      const infoActivitySection = document.getElementById('infoActivitySection');
+      const infoActivity = document.getElementById('infoActivity');
       const infoRecipes = document.getElementById('infoRecipes');
       const collectionBackdrop = document.getElementById('collectionBackdrop');
       const rootsBackdrop = document.getElementById('rootsBackdrop');
@@ -1100,7 +1145,7 @@
         if (item.type === 'field' && STARTING_SET.has(item.id)) {
           return { baseId: item.id, core: item.id, modifiers: [] };
         }
-        if (item.type === 'root_built' && item.rootSpec) {
+        if (item.rootSpec && (item.type === 'field' || item.type === 'root_built')) {
           return { baseId: item.id, core: item.rootSpec.core, modifiers: [...item.rootSpec.modifiers] };
         }
         return null;
@@ -1110,7 +1155,8 @@
         const baseState = getRootState(baseId);
         const modifier = getItem(modifierId);
         const result = getItem(recipe.result);
-        if (!baseState || !modifier || !result || result.type !== 'root_built') return false;
+        if (!baseState || !modifier || !result || !result.rootSpec) return false;
+        if (result.type !== 'field' && result.type !== 'root_built') return false;
         if (!isRootModifier(modifierId)) return false;
         if (baseState.modifiers.includes(modifierId)) return false;
         if (baseState.modifiers.length >= MAX_ROOT_MODIFIERS) return false;
@@ -1141,6 +1187,11 @@
         return GENERAL_RECIPES.get(key) || resolveRootRecipe(idA, idB);
       }
 
+      function resolveRecipeResult(idA, idB) {
+        const recipe = resolveRecipe(idA, idB);
+        return recipe ? recipe.result : null;
+      }
+
       function computeReachable() {
         const reachable = new Set(STARTING_ITEM_IDS);
         let changed = true;
@@ -1162,6 +1213,12 @@
         const reachable = computeReachable();
         const unreachable = curatedIds.filter((id) => !reachable.has(id));
         const totalCurated = curatedIds.length;
+        const reservedRegressionFailures = RESERVED_PAIR_EXPECTATIONS
+          .filter((test) => resolveRecipeResult(test.a, test.b) !== test.result)
+          .map((test) => test.label || (test.a + ' + ' + test.b + ' → ' + test.result));
+        const rootRegressionFailures = ROOT_REGRESSION_CASES
+          .filter((test) => resolveRecipeResult(test.a, test.b) !== test.expected)
+          .map((test) => test.label + (test.expected ? (' should produce ' + test.expected) : ' should not resolve'));
         const audit = {
           totalCurated,
           reachableCurated: totalCurated - unreachable.length,
@@ -1169,8 +1226,15 @@
           duplicateRecipePairs: DUPLICATE_RECIPE_PAIRS.length,
           invalidRecipeReferences: INVALID_RECIPE_REFERENCES.length,
           reservedPairConflicts: RESERVED_PAIR_CONFLICTS.length,
+          reservedPairRegressionFailures: reservedRegressionFailures.length,
+          rootRegressionFailures: rootRegressionFailures.length,
           unreachableItems: unreachable,
-          status: (unreachable.length === 0 && DUPLICATE_RECIPE_PAIRS.length === 0 && INVALID_RECIPE_REFERENCES.length === 0 && RESERVED_PAIR_CONFLICTS.length === 0) ? 'PASS' : 'FAIL'
+          status: (unreachable.length === 0
+            && DUPLICATE_RECIPE_PAIRS.length === 0
+            && INVALID_RECIPE_REFERENCES.length === 0
+            && RESERVED_PAIR_CONFLICTS.length === 0
+            && reservedRegressionFailures.length === 0
+            && rootRegressionFailures.length === 0) ? 'PASS' : 'FAIL'
         };
         state.lastAudit = audit;
 
@@ -1182,6 +1246,8 @@
           console.log('Duplicate recipe pairs:', audit.duplicateRecipePairs);
           console.log('Invalid recipe references:', audit.invalidRecipeReferences);
           console.log('Reserved-pair conflicts:', audit.reservedPairConflicts);
+          console.log('Reserved-pair regression failures:', audit.reservedPairRegressionFailures);
+          console.log('Root regression failures:', audit.rootRegressionFailures);
           console.log('AUDIT STATUS:', audit.status);
           if (audit.unreachableItems.length) {
             console.log('Unreachable item ids:', audit.unreachableItems.join(', '));
@@ -1194,6 +1260,12 @@
           }
           if (RESERVED_PAIR_CONFLICTS.length) {
             console.log('Reserved conflicts:', RESERVED_PAIR_CONFLICTS.join(', '));
+          }
+          if (reservedRegressionFailures.length) {
+            console.log('Reserved regression failures:', reservedRegressionFailures.join(', '));
+          }
+          if (rootRegressionFailures.length) {
+            console.log('Root regression failures:', rootRegressionFailures.join(', '));
           }
         }
         return audit;
@@ -1361,7 +1433,7 @@
         const blocks = [
           { label: 'Curated discoveries', value: discoveredCount + ' / ' + totalDiscoveries },
           { label: 'Starting sciences', value: String(startingCount) },
-          { label: 'Root-built', value: String(rootCount) },
+          { label: 'Constructed specialties', value: String(rootCount) },
           { label: 'Audit', value: audit ? audit.status : '—' }
         ];
         for (const block of blocks) {
@@ -1417,11 +1489,41 @@
         return item.label;
       }
 
+      function joinedLabels(ids, labelSource) {
+        return ids.map((id) => labelSource[id]?.label || id).join(' + ');
+      }
+
       function rootSummary(item) {
-        if (item.type !== 'root_built' || !item.rootSpec) return item.group;
-        const core = CATALOG[item.rootSpec.core]?.label || item.rootSpec.core;
-        const modifiers = item.rootSpec.modifiers.map((id) => ROOT_MODIFIERS[id]?.label || id).join(' + ');
-        return 'Core: ' + core + ' • Roots: ' + modifiers;
+        if (item.rootSpec) {
+          const core = CATALOG[item.rootSpec.core]?.label || item.rootSpec.core;
+          const modifiers = joinedLabels(item.rootSpec.modifiers, ROOT_MODIFIERS);
+          return 'Core: ' + core + ' • Roots: ' + modifiers;
+        }
+        if (Array.isArray(item.roots) && item.roots.length) {
+          return 'Roots: ' + joinedLabels(item.roots, CATALOG);
+        }
+        return item.group;
+      }
+
+      function itemFitNote(item) {
+        const parts = [];
+        if (item.type === 'field') {
+          parts.push('Established field.');
+        } else if (item.type === 'root_built') {
+          parts.push('Constructed specialty for this game; not claimed here as a formal standalone discipline.');
+        } else {
+          parts.push('Type: ' + titleCaseType(item.type) + '.');
+        }
+        if (Array.isArray(item.roots) && item.roots.length) {
+          parts.push('Roots: ' + joinedLabels(item.roots, CATALOG) + '.');
+        }
+        if (item.rootSpec) {
+          const core = CATALOG[item.rootSpec.core]?.label || item.rootSpec.core;
+          const modifiers = joinedLabels(item.rootSpec.modifiers, ROOT_MODIFIERS);
+          parts.push('Root path: ' + core + (modifiers ? ' + ' + modifiers : '') + '.');
+        }
+        parts.push('Group: ' + item.group + '.');
+        return parts.join(' ');
       }
 
       function renderWorkspace() {
@@ -1484,10 +1586,10 @@
         rootRules.innerHTML = '';
         const rules = [
           'Approved modifier roots: ' + Object.values(ROOT_MODIFIERS).map((entry) => entry.label).join(', ') + '.',
-          'A root-built specialty must keep exactly one core starting subject.',
-          'Each specialty can carry at most four modifier roots.',
+          'A derived specialty must keep exactly one core starting subject.',
+          'Each derived specialty can carry at most four modifier roots.',
           'Modifier roots must be curated and cannot silently overwrite another recipe.',
-          'Field + field or root-built + field stacking is not used procedurally here; only curated base-plus-modifier builds are allowed.'
+          'Field + field or derived-specialty + field stacking is not used procedurally here; only curated base-plus-modifier builds are allowed.'
         ];
         for (const text of rules) {
           const box = document.createElement('div');
@@ -1497,7 +1599,7 @@
         }
 
         rootGrid.innerHTML = '';
-        const roots = ITEM_DEFS.filter((item) => item.type === 'root_built').sort((a, b) => a.label.localeCompare(b.label));
+        const roots = ITEM_DEFS.filter((item) => item.rootSpec).sort((a, b) => a.label.localeCompare(b.label));
         for (const item of roots) {
           const discovered = state.discovered.has(item.id);
           const card = document.createElement('article');
@@ -1506,6 +1608,7 @@
           card.querySelector('h4').textContent = item.label + (discovered ? '' : ' • locked');
           card.querySelector('p').textContent = item.description;
           const chips = card.querySelector('.chip-row');
+          chips.appendChild(makeChip(titleCaseType(item.type), 'type-' + item.type));
           chips.appendChild(makeChip(CATALOG[item.rootSpec.core].label, 'type-field'));
           for (const modifierId of item.rootSpec.modifiers) {
             chips.appendChild(makeChip(ROOT_MODIFIERS[modifierId]?.label || modifierId, 'type-root_built'));
@@ -1525,12 +1628,22 @@
         infoTitle.textContent = item.label;
         infoSubtitle.textContent = item.group;
         infoDescription.textContent = item.description;
-        infoRootNote.textContent = item.type === 'root_built'
-          ? rootSummary(item)
-          : 'Type: ' + titleCaseType(item.type) + '. This entry belongs to ' + item.group + '.';
+        infoRootNote.textContent = itemFitNote(item);
+        if (item.activity) {
+          infoActivitySection.hidden = false;
+          infoActivity.textContent = item.activity;
+        } else {
+          infoActivitySection.hidden = true;
+          infoActivity.textContent = '';
+        }
         infoChips.innerHTML = '';
         infoChips.appendChild(makeChip(titleCaseType(item.type), 'type-' + item.type));
         infoChips.appendChild(makeChip(item.group));
+        if (Array.isArray(item.roots) && item.roots.length) {
+          for (const rootId of item.roots) {
+            infoChips.appendChild(makeChip(CATALOG[rootId]?.label || rootId, 'type-field'));
+          }
+        }
         if (item.rootSpec) {
           infoChips.appendChild(makeChip(CATALOG[item.rootSpec.core].label, 'type-field'));
           for (const modifierId of item.rootSpec.modifiers) {
