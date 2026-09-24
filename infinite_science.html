@@ -631,8 +631,8 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="modal-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
-    <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="modal-backdrop" id="infoBackdrop" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
+    <section class="sheet">
       <div class="panel-head">
         <div>
           <h3 id="infoTitle" tabindex="-1">Discovery</h3>
@@ -658,8 +658,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" hidden>
-    <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="modal-backdrop" id="collectionBackdrop" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
+    <section class="modal">
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
@@ -673,8 +673,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" hidden>
-    <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+  <div class="modal-backdrop" id="rootsBackdrop" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1" hidden>
+    <section class="modal">
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
@@ -1628,7 +1628,7 @@
       }
 
       function getDialogElement(backdrop) {
-        return backdrop ? (backdrop.querySelector('[role="dialog"]') || backdrop) : null;
+        return backdrop || null;
       }
 
       function supportsInert() {
@@ -1656,14 +1656,29 @@
           }
           return;
         }
+        const backgroundFocusables = appShell.querySelectorAll('button, [href], input, select, textarea, [tabindex]');
         if (disabled) {
           appShell.setAttribute('aria-hidden', 'true');
           appShell.dataset.prevPointerEvents = appShell.style.pointerEvents || '';
           appShell.style.pointerEvents = 'none';
+          backgroundFocusables.forEach((node) => {
+            const el = node;
+            el.dataset.prevTabindex = el.getAttribute('tabindex') || '';
+            el.setAttribute('tabindex', '-1');
+          });
         } else {
           appShell.removeAttribute('aria-hidden');
           appShell.style.pointerEvents = appShell.dataset.prevPointerEvents || '';
           delete appShell.dataset.prevPointerEvents;
+          backgroundFocusables.forEach((node) => {
+            const el = node;
+            if (el.dataset.prevTabindex) {
+              el.setAttribute('tabindex', el.dataset.prevTabindex);
+            } else {
+              el.removeAttribute('tabindex');
+            }
+            delete el.dataset.prevTabindex;
+          });
         }
       }
 
@@ -1685,7 +1700,6 @@
         setBackgroundModalState(true);
         backdrop.hidden = false;
         backdrop.classList.add('open');
-        backdrop.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
         const focusTarget = getDialogElement(backdrop) || backdrop;
         if (focusTarget) {
@@ -1697,7 +1711,6 @@
         const { restoreFocus = true, clearStoredFocus = true } = options;
         const wasOpen = backdrop.classList.contains('open');
         backdrop.classList.remove('open');
-        backdrop.setAttribute('aria-hidden', 'true');
         backdrop.hidden = true;
         if (!getOpenBackdrop()) {
           setBackgroundModalState(false);
@@ -2112,7 +2125,10 @@
             if (focusables.length) {
               const first = focusables[0];
               const last = focusables[focusables.length - 1];
-              if (!event.shiftKey && document.activeElement === activeDialog) {
+              if (!activeDialog.contains(document.activeElement)) {
+                event.preventDefault();
+                (event.shiftKey ? last : first).focus();
+              } else if (!event.shiftKey && document.activeElement === activeDialog) {
                 event.preventDefault();
                 first.focus();
               } else if (event.shiftKey && document.activeElement === activeDialog) {
