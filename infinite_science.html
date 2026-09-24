@@ -830,6 +830,7 @@
         { id: 'biochemistry', label: 'Biochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies the chemical substances and reactions of living systems.', roots: ['biology', 'chemistry'], activity: 'Biochemists measure enzymes, proteins, and metabolic pathways to explain how cells store energy and build structures.' },
         { id: 'biophysics', label: 'Biophysics', type: 'field', group: 'Interdisciplinary Field', description: 'The field that uses physical principles and tools to study living systems.', roots: ['biology', 'physics'], activity: 'Biophysicists model how membranes, biomolecules, and molecular machines move, fold, and transfer energy.' },
         { id: 'geobiology', label: 'Geobiology', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies how life and Earth processes influence one another across environments and time.', roots: ['biology', 'earth_science'], activity: 'Geobiologists investigate how organisms reshape sediments, minerals, soils, and the chemical conditions around them.' },
+        { id: 'biogeochemistry', label: 'Biogeochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies how biological, geological, and chemical processes cycle matter through Earth systems.', roots: ['biology', 'chemistry', 'earth_science'], activity: 'Biogeochemists trace how organisms, rocks, water, and gases move elements such as carbon, nitrogen, and sulfur through environments.' },
         { id: 'physical_chemistry', label: 'Physical Chemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that explains chemical systems using the laws of physics, including energy, motion, and structure.', roots: ['physics', 'chemistry'], activity: 'Physical chemists calculate reaction rates, molecular energies, and how light and heat change matter.' },
         { id: 'astrochemistry', label: 'Astrochemistry', type: 'field', group: 'Interdisciplinary Field', description: 'The field that studies chemical processes and molecules in space and on other worlds.', roots: ['chemistry', 'astronomy'], activity: 'Astrochemists use spectra and laboratory simulations to identify molecules in interstellar clouds, disks, and atmospheres.' },
         { id: 'planetary_science', label: 'Planetary Science', type: 'field', group: 'Earth & Space Field', description: 'The field that studies planets, moons, and other worlds as evolving systems.', roots: ['earth_science', 'astronomy'], activity: 'Planetary scientists compare surfaces, atmospheres, interiors, and impacts using spacecraft data, samples, and telescopes.' },
@@ -888,6 +889,7 @@
         { a: 'geochemistry', b: 'earth_science', result: 'mineral', reason: 'Geochemistry helps explain how minerals form, transform, and store elements in Earth materials.' },
         { a: 'astrochemistry', b: 'astronomy', result: 'spectrum', reason: 'Astrochemistry relies on spectra to identify molecules in distant environments.' },
         { a: 'planetary_science', b: 'astronomy', result: 'planet', reason: 'Planetary science focuses directly on planets and related worlds as scientific objects.' },
+        { a: 'biochemistry', b: 'earth_science', result: 'biogeochemistry', reason: 'Biogeochemistry connects the chemistry of life to soils, waters, sediments, and global element cycles.' },
 
         { a: 'physics', b: 'scale', result: 'microscopic', reason: 'Physical measurement across scales helps define the microscopic realm.' },
         { a: 'chemistry', b: 'matter', result: 'atom', reason: 'Chemistry explains matter by reasoning about atoms and their interactions.' },
@@ -1655,7 +1657,9 @@
         if (!recipes.length) {
           const note = document.createElement('p');
           note.className = 'mini-note';
-          note.textContent = 'This is a starting science, so it begins in your inventory.';
+          note.textContent = STARTING_SET.has(itemId)
+            ? 'This is a starting science, so it begins in your inventory.'
+            : 'No inbound curated recipe is listed for this entry.';
           infoRecipes.appendChild(note);
         } else {
           for (const recipe of recipes) {
