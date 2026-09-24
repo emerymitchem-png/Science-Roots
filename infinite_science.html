@@ -631,7 +631,7 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
+  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" role="presentation" hidden>
     <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
@@ -658,7 +658,7 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" hidden>
+  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" role="presentation" hidden>
     <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
@@ -673,7 +673,7 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" hidden>
+  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" role="presentation" hidden>
     <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
@@ -1894,8 +1894,8 @@
               z: ++state.zCounter
             });
             saveState();
-            renderAll();
             state.drag = null;
+            renderAll();
             return;
           }
           pushToast('No reaction', CATALOG[draggedTile.itemId].label + ' does not combine meaningfully with ' + CATALOG[targetTile.itemId].label + '.', 'warn');
@@ -1985,7 +1985,11 @@
           }
           if (event.key === 'Escape') {
             if (activeBackdrop) {
-              closeBackdrop(activeBackdrop);
+              if (activeBackdrop === infoBackdrop) {
+                closeInfo();
+              } else {
+                closeBackdrop(activeBackdrop);
+              }
               return;
             }
           }
