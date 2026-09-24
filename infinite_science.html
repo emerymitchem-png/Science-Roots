@@ -1706,11 +1706,13 @@
 
       function openBackdrop(backdrop, initialFocusEl, triggerEl) {
         const openBackdropNode = getOpenBackdrop();
+        const preservedFocus = modalState.lastFocused
+          || (triggerEl instanceof HTMLElement ? triggerEl : (document.activeElement instanceof HTMLElement ? document.activeElement : null));
         if (openBackdropNode && openBackdropNode !== backdrop) {
-          closeBackdrop(openBackdropNode, { restoreFocus: false });
+          closeBackdrop(openBackdropNode, { restoreFocus: false, clearStoredFocus: false });
         }
         if (!getOpenBackdrop()) {
-          modalState.lastFocused = triggerEl instanceof HTMLElement ? triggerEl : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+          modalState.lastFocused = preservedFocus;
         }
         appShell.inert = true;
         appShell.setAttribute('inert', '');
@@ -1725,7 +1727,7 @@
       }
 
       function closeBackdrop(backdrop, options = {}) {
-        const { restoreFocus = true } = options;
+        const { restoreFocus = true, clearStoredFocus = true } = options;
         const wasOpen = backdrop.classList.contains('open');
         backdrop.classList.remove('open');
         backdrop.setAttribute('aria-hidden', 'true');
@@ -1737,7 +1739,9 @@
           if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
           }
-          modalState.lastFocused = null;
+          if (clearStoredFocus) {
+            modalState.lastFocused = null;
+          }
         }
       }
 
@@ -1930,13 +1934,21 @@
         }
         const tile = getWorkspaceTile(state.drag.tileId);
         if (!tile) return;
+        if (state.drag.source === 'workspace' && !state.drag.moved) {
+          const dx = pointerEvent.clientX - state.drag.startX;
+          const dy = pointerEvent.clientY - state.drag.startY;
+          if (Math.hypot(dx, dy) <= 6) {
+            return;
+          }
+          state.drag.moved = true;
+        }
         const deskRect = desk.getBoundingClientRect();
         const offsetX = state.drag.source === 'workspace' ? state.drag.offsetX : TILE_W / 2;
         const offsetY = state.drag.source === 'workspace' ? state.drag.offsetY : TILE_H / 2;
         const pos = clampTilePosition(pointerEvent.clientX - deskRect.left - offsetX, pointerEvent.clientY - deskRect.top - offsetY);
         tile.x = pos.x;
         tile.y = pos.y;
-        if (!state.drag.moved) {
+        if (state.drag.source !== 'workspace' && !state.drag.moved) {
           const dx = pointerEvent.clientX - state.drag.startX;
           const dy = pointerEvent.clientY - state.drag.startY;
           state.drag.moved = Math.hypot(dx, dy) > 6;
@@ -2085,10 +2097,12 @@
             if (focusables.length) {
               const first = focusables[0];
               const last = focusables[focusables.length - 1];
-              if (event.shiftKey && document.activeElement === first) {
+              const activeEl = document.activeElement;
+              const activeInList = focusables.includes(activeEl);
+              if (event.shiftKey && (!activeInList || activeEl === first)) {
                 event.preventDefault();
                 last.focus();
-              } else if (!event.shiftKey && document.activeElement === last) {
+              } else if (!event.shiftKey && (!activeInList || activeEl === last)) {
                 event.preventDefault();
                 first.focus();
               }
