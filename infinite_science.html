@@ -1308,7 +1308,7 @@
           }
           if (Array.isArray(parsed.workspace)) {
             state.workspace = parsed.workspace
-              .filter((tile) => tile && CATALOG[tile.itemId])
+              .filter((tile) => tile && CATALOG[tile.itemId] && state.discovered.has(tile.itemId))
               .map((tile) => {
                 const safeX = Number.isFinite(Number(tile.x)) ? Number(tile.x) : 0;
                 const safeY = Number.isFinite(Number(tile.y)) ? Number(tile.y) : 0;
@@ -1718,9 +1718,7 @@
         if (openBackdropNode && openBackdropNode !== backdrop) {
           closeBackdrop(openBackdropNode, { restoreFocus: false, clearStoredFocus: false });
         }
-        if (!getOpenBackdrop()) {
-          modalState.lastFocused = nextFocusTarget;
-        }
+        modalState.lastFocused = nextFocusTarget;
         appShell.inert = true;
         appShell.setAttribute('inert', '');
         backdrop.hidden = false;
