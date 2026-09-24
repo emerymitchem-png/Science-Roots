@@ -626,8 +626,8 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true">
-    <section class="sheet" aria-labelledby="infoTitle" aria-modal="true" role="dialog">
+  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" aria-labelledby="infoTitle" aria-modal="true" role="dialog">
+    <section class="sheet">
       <div class="panel-head">
         <div>
           <h3 id="infoTitle">Discovery</h3>
@@ -653,8 +653,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true">
-    <section class="modal" aria-labelledby="collectionTitle" aria-modal="true" role="dialog">
+  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" aria-labelledby="collectionTitle" aria-modal="true" role="dialog">
+    <section class="modal">
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
@@ -668,8 +668,8 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true">
-    <section class="modal" aria-labelledby="rootsTitle" aria-modal="true" role="dialog">
+  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" aria-labelledby="rootsTitle" aria-modal="true" role="dialog">
+    <section class="modal">
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
@@ -1014,6 +1014,7 @@
       const inventorySearch = document.getElementById('inventorySearch');
       const toastStack = document.getElementById('toastStack');
       const statusBar = document.getElementById('statusBar');
+      const appShell = document.querySelector('.app');
       const infoBackdrop = document.getElementById('infoBackdrop');
       const infoTitle = document.getElementById('infoTitle');
       const infoSubtitle = document.getElementById('infoSubtitle');
@@ -1317,13 +1318,15 @@
       }
 
       function renderStatusBar() {
-        const discoveredCount = state.discovered.size;
-        const totalDiscoveries = ITEM_DEFS.length;
+        const discoveredCount = [...state.discovered].filter((id) => !STARTING_SET.has(id)).length;
+        const totalDiscoveries = state.lastAudit ? state.lastAudit.totalCurated : ITEM_DEFS.length - STARTING_ITEM_IDS.length;
+        const startingCount = STARTING_ITEM_IDS.length;
         const rootCount = [...state.discovered].filter((id) => CATALOG[id]?.type === 'root_built').length;
         const audit = state.lastAudit;
         statusBar.innerHTML = '';
         const blocks = [
-          { label: 'Discovered', value: discoveredCount + ' / ' + totalDiscoveries },
+          { label: 'Curated discoveries', value: discoveredCount + ' / ' + totalDiscoveries },
+          { label: 'Starting sciences', value: String(startingCount) },
           { label: 'Root-built', value: String(rootCount) },
           { label: 'Audit', value: audit ? audit.status : '—' }
         ];
@@ -1538,6 +1541,8 @@
 
       function openBackdrop(backdrop, initialFocusEl) {
         modalState.lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        appShell.inert = true;
+        appShell.setAttribute('aria-hidden', 'true');
         backdrop.classList.add('open');
         backdrop.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -1552,6 +1557,8 @@
         backdrop.classList.remove('open');
         backdrop.setAttribute('aria-hidden', 'true');
         if (![infoBackdrop, collectionBackdrop, rootsBackdrop].some((node) => node.classList.contains('open'))) {
+          appShell.inert = false;
+          appShell.removeAttribute('aria-hidden');
           document.body.style.overflow = '';
           if (wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
@@ -1793,9 +1800,9 @@
           beginDragFromWorkspace(Number(tile.dataset.tileId), event);
         });
 
-        desk.addEventListener('pointermove', handleDeskPointerMove);
-        desk.addEventListener('pointerup', handleDeskPointerUp);
-        desk.addEventListener('pointercancel', handleDeskPointerUp);
+        document.addEventListener('pointermove', handleDeskPointerMove);
+        document.addEventListener('pointerup', handleDeskPointerUp);
+        document.addEventListener('pointercancel', handleDeskPointerUp);
         desk.addEventListener('lostpointercapture', (event) => {
           if (state.drag && state.drag.pointerId === event.pointerId) {
             finishDrag(event);
