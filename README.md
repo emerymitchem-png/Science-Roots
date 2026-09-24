@@ -10,4 +10,6 @@ Science-Roots now includes **Infinite Science**, a self-contained educational br
 4. Click any tile to open its information panel.
 5. Use **Collection**, **Root Library**, **Clear Desk**, and **Reset Game** from the toolbar as needed.
 
+Keyboard support: focus an inventory item and press **Enter** to place it on the desk (or **I** for info). Focus a desk tile and press **S** to select it, **C** on another tile to combine, **Enter** for info, or **Delete** to discard it.
+
 Progress and desk state are saved locally in your browser with `localStorage`.

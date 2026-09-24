@@ -206,6 +206,11 @@
       background: linear-gradient(180deg, rgba(247,227,207,0.88), rgba(255,255,255,0.98));
     }
 
+    .tile.keyboard-selected {
+      border-color: rgba(58, 110, 165, 0.7);
+      box-shadow: 0 0 0 3px rgba(58, 110, 165, 0.16), var(--tile-shadow);
+    }
+
     .tile-label {
       font-weight: 700;
       font-size: 0.98rem;
@@ -626,15 +631,15 @@
 
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true">
-    <section class="sheet" aria-labelledby="infoTitle" aria-modal="true" role="dialog">
+  <div class="sheet-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
+    <section class="sheet" aria-labelledby="infoTitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="infoTitle">Discovery</h3>
           <p id="infoSubtitle">Scientific note</p>
         </div>
         <div class="panel-actions">
-          <button id="closeInfoButton" type="button">Close</button>
+          <button id="closeInfoButton" type="button" aria-label="Close information panel">Close</button>
         </div>
       </div>
       <div class="chip-row" id="infoChips"></div>
@@ -653,30 +658,30 @@
     </section>
   </div>
 
-  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true">
-    <section class="modal" aria-labelledby="collectionTitle" aria-modal="true" role="dialog">
+  <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" hidden>
+    <section class="modal" aria-labelledby="collectionTitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
           <p>Everything you have unlocked so far, grouped in a compact notebook view.</p>
         </div>
         <div class="panel-actions">
-          <button id="closeCollectionButton" type="button">Close</button>
+          <button id="closeCollectionButton" type="button" aria-label="Close collection panel">Close</button>
         </div>
       </div>
       <div class="collection-grid" id="collectionGrid"></div>
     </section>
   </div>
 
-  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true">
-    <section class="modal" aria-labelledby="rootsTitle" aria-modal="true" role="dialog">
+  <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" hidden>
+    <section class="modal" aria-labelledby="rootsTitle" aria-modal="true" role="dialog" tabindex="-1">
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
           <p>Root-built specialties use exactly one core subject plus approved modifier roots.</p>
         </div>
         <div class="panel-actions">
-          <button id="closeRootsButton" type="button">Close</button>
+          <button id="closeRootsButton" type="button" aria-label="Close root library panel">Close</button>
         </div>
       </div>
       <div class="root-rules" id="rootRules"></div>
@@ -1004,7 +1009,9 @@
         collectionOpen: false,
         rootsOpen: false,
         drag: null,
-        lastAudit: null
+        lastAudit: null,
+        selectedTileId: null,
+        storageWarningShown: false
       };
 
       const desk = document.getElementById('desk');
@@ -1199,7 +1206,15 @@
           nextTileId: state.nextTileId,
           zCounter: state.zCounter
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        } catch (error) {
+          if (!state.storageWarningShown) {
+            state.storageWarningShown = true;
+            console.warn('Could not save Infinite Science state.', error);
+            pushToast('Saving unavailable', 'Progress could not be written to local storage in this browser session.', 'warn');
+          }
+        }
       }
 
       function loadState() {
@@ -1214,13 +1229,18 @@
           if (Array.isArray(parsed.workspace)) {
             state.workspace = parsed.workspace
               .filter((tile) => tile && CATALOG[tile.itemId])
-              .map((tile) => ({
-                id: Number(tile.id),
-                itemId: tile.itemId,
-                x: Number(tile.x),
-                y: Number(tile.y),
-                z: Number(tile.z) || 1
-              }));
+              .map((tile) => {
+                const safeX = Number.isFinite(Number(tile.x)) ? Number(tile.x) : 0;
+                const safeY = Number.isFinite(Number(tile.y)) ? Number(tile.y) : 0;
+                const pos = clampTilePosition(safeX, safeY);
+                return {
+                  id: Number.isFinite(Number(tile.id)) ? Number(tile.id) : state.nextTileId++,
+                  itemId: tile.itemId,
+                  x: pos.x,
+                  y: pos.y,
+                  z: Number.isFinite(Number(tile.z)) ? Number(tile.z) : 1
+                };
+              });
           }
           state.nextTileId = Math.max(1, Number(parsed.nextTileId) || 1);
           state.zCounter = Math.max(1, Number(parsed.zCounter) || state.workspace.length + 1);
@@ -1255,12 +1275,16 @@
 
       function removeWorkspaceTile(tileId) {
         state.workspace = state.workspace.filter((tile) => tile.id !== tileId);
+        if (state.selectedTileId === tileId) {
+          state.selectedTileId = null;
+        }
         saveState();
         renderWorkspace();
       }
 
       function clearDesk() {
         state.workspace = [];
+        state.selectedTileId = null;
         saveState();
         renderWorkspace();
       }
@@ -1274,7 +1298,12 @@
         state.search = '';
         inventorySearch.value = '';
         state.activeInfoId = null;
-        localStorage.removeItem(STORAGE_KEY);
+        state.selectedTileId = null;
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+          console.warn('Could not clear saved Infinite Science state.', error);
+        }
         renderAll();
         pushToast('Game reset', 'Back to the five starting sciences.', 'warn');
       }
@@ -1354,6 +1383,7 @@
           row.className = 'inventory-row';
           row.dataset.itemId = item.id;
           row.setAttribute('role', 'listitem');
+          row.setAttribute('aria-label', item.label + '. Press Enter to place on the desk, or I to read its note.');
           row.innerHTML = [
             '<div class="inventory-main">',
             '  <div class="inventory-name"></div>',
@@ -1395,6 +1425,9 @@
       }
 
       function renderWorkspace() {
+        if (state.selectedTileId && !state.workspace.some((tile) => tile.id === state.selectedTileId)) {
+          state.selectedTileId = null;
+        }
         desk.querySelectorAll('.tile').forEach((node) => node.remove());
         const sorted = [...state.workspace].sort((a, b) => a.z - b.z);
         for (const tile of sorted) {
@@ -1405,6 +1438,7 @@
           node.className = 'tile';
           node.dataset.tileId = String(tile.id);
           node.dataset.itemId = item.id;
+          node.setAttribute('aria-label', item.label + '. Press Enter for info, S to select, C to combine with a selected tile, or Delete to discard.');
           node.style.left = tile.x + 'px';
           node.style.top = tile.y + 'px';
           node.style.zIndex = String(tile.z);
@@ -1420,6 +1454,7 @@
           if (item.type !== 'root_built') {
             chips.appendChild(makeChip(item.group));
           }
+          node.classList.toggle('keyboard-selected', state.selectedTileId === tile.id);
           desk.appendChild(node);
         }
         deskEmptyHint.classList.toggle('hidden', state.workspace.length > 0);
@@ -1550,6 +1585,7 @@
         }
         appShell.inert = true;
         appShell.setAttribute('aria-hidden', 'true');
+        backdrop.hidden = false;
         backdrop.classList.add('open');
         backdrop.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -1563,6 +1599,7 @@
         const wasOpen = backdrop.classList.contains('open');
         backdrop.classList.remove('open');
         backdrop.setAttribute('aria-hidden', 'true');
+        backdrop.hidden = true;
         if (![infoBackdrop, collectionBackdrop, rootsBackdrop].some((node) => node.classList.contains('open'))) {
           appShell.inert = false;
           appShell.removeAttribute('aria-hidden');
@@ -1582,6 +1619,67 @@
         } else {
           pushToast('Created again', CATALOG[itemId].label + ' is already in your collection.', 'success');
         }
+      }
+
+      function keyboardSpawnPosition() {
+        const bounds = desk.getBoundingClientRect();
+        const index = state.workspace.length;
+        const spreadX = ((index % 4) - 1.5) * 28;
+        const spreadY = ((Math.floor(index / 4) % 3) - 1) * 24;
+        return clampTilePosition((bounds.width - TILE_W) / 2 + spreadX, (bounds.height - TILE_H) / 2 + spreadY);
+      }
+
+      function setSelectedTile(tileId) {
+        state.selectedTileId = state.selectedTileId === tileId ? null : tileId;
+        renderWorkspace();
+      }
+
+      function combineTilesIntoResult(firstTile, secondTile, resultId) {
+        const midpoint = clampTilePosition((firstTile.x + secondTile.x) / 2, (firstTile.y + secondTile.y) / 2);
+        state.workspace = state.workspace.filter((tile) => tile.id !== firstTile.id && tile.id !== secondTile.id);
+        discover(resultId);
+        const newTile = {
+          id: state.nextTileId++,
+          itemId: resultId,
+          x: midpoint.x,
+          y: midpoint.y,
+          z: ++state.zCounter
+        };
+        state.workspace.push(newTile);
+        state.selectedTileId = newTile.id;
+        saveState();
+        renderAll();
+      }
+
+      function keyboardSpawnOrCombine(itemId) {
+        const selectedTile = getWorkspaceTile(state.selectedTileId);
+        if (selectedTile) {
+          const recipe = resolveRecipe(selectedTile.itemId, itemId);
+          if (recipe) {
+            combineTilesIntoResult(selectedTile, { id: -1, itemId, x: selectedTile.x, y: selectedTile.y }, recipe.result);
+            return;
+          }
+        }
+        const pos = keyboardSpawnPosition();
+        const tile = createWorkspaceTile(itemId, pos.x, pos.y);
+        state.selectedTileId = tile.id;
+        renderWorkspace();
+        pushToast('Desk copy added', CATALOG[itemId].label + ' was placed on the desk for keyboard play.', 'success');
+      }
+
+      function keyboardCombineSelectedWithTile(targetTileId) {
+        const selectedTile = getWorkspaceTile(state.selectedTileId);
+        const targetTile = getWorkspaceTile(targetTileId);
+        if (!selectedTile || !targetTile || selectedTile.id === targetTile.id) {
+          setSelectedTile(targetTileId);
+          return;
+        }
+        const recipe = resolveRecipe(selectedTile.itemId, targetTile.itemId);
+        if (recipe) {
+          combineTilesIntoResult(selectedTile, targetTile, recipe.result);
+          return;
+        }
+        pushToast('No reaction', CATALOG[selectedTile.itemId].label + ' does not combine meaningfully with ' + CATALOG[targetTile.itemId].label + '.', 'warn');
       }
 
       function overlapArea(a, b) {
@@ -1877,14 +1975,37 @@
             closeCollection();
             closeRoots();
           }
+          if (activeBackdrop) {
+            return;
+          }
           if (event.shiftKey && (event.key === 'A' || event.key === 'a')) {
             const audit = runAudit(true);
             renderStatusBar();
             pushToast('Audit rerun', 'Audit status: ' + audit.status + '.', audit.status === 'PASS' ? 'success' : 'warn');
           }
+          if ((event.key === 'Enter' || event.key === ' ') && document.activeElement?.classList.contains('inventory-row')) {
+            event.preventDefault();
+            keyboardSpawnOrCombine(document.activeElement.dataset.itemId);
+          }
+          if ((event.key === 'i' || event.key === 'I') && document.activeElement?.classList.contains('inventory-row')) {
+            event.preventDefault();
+            openInfo(document.activeElement.dataset.itemId);
+          }
           if ((event.key === 'Enter' || event.key === ' ') && document.activeElement?.classList.contains('tile')) {
             event.preventDefault();
             openInfo(document.activeElement.dataset.itemId);
+          }
+          if ((event.key === 's' || event.key === 'S') && document.activeElement?.classList.contains('tile')) {
+            event.preventDefault();
+            setSelectedTile(Number(document.activeElement.dataset.tileId));
+          }
+          if ((event.key === 'c' || event.key === 'C') && document.activeElement?.classList.contains('tile')) {
+            event.preventDefault();
+            keyboardCombineSelectedWithTile(Number(document.activeElement.dataset.tileId));
+          }
+          if ((event.key === 'Delete' || event.key === 'Backspace') && document.activeElement?.classList.contains('tile')) {
+            event.preventDefault();
+            removeWorkspaceTile(Number(document.activeElement.dataset.tileId));
           }
         });
       }
