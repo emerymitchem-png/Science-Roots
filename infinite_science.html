@@ -605,7 +605,7 @@
       </header>
       <div class="desk-wrap">
         <div class="desk" id="desk" tabindex="0" aria-label="Workspace desk">
-          <div class="desk-empty" id="deskEmptyHint">Start by dragging a science from the inventory onto the desk.<br />Click any tile to read its note. Press <strong>Shift + A</strong> to rerun the development audit.</div>
+          <div class="desk-empty" id="deskEmptyHint">Start by dragging a science from the inventory onto the desk.<br />Click any tile to read its note. In debug mode, press <strong>Shift + Alt + A</strong> to rerun the development audit.</div>
           <div class="trash-zone" id="trashZone" aria-hidden="true">
             <div>
               <strong>Trash</strong><br />Drop here to discard
@@ -1823,6 +1823,8 @@
           tileId: null,
           startX: pointerEvent.clientX,
           startY: pointerEvent.clientY,
+          latestClientX: pointerEvent.clientX,
+          latestClientY: pointerEvent.clientY,
           moved: false,
           pointerCapturedBy: row
         };
@@ -1874,6 +1876,8 @@
           offsetY: pointerEvent.clientY - freshRect.top,
           startX: pointerEvent.clientX,
           startY: pointerEvent.clientY,
+          latestClientX: pointerEvent.clientX,
+          latestClientY: pointerEvent.clientY,
           moved: false,
           pointerCapturedBy: freshNode
         };
@@ -1898,6 +1902,8 @@
         }
         const tile = getWorkspaceTile(state.drag.tileId);
         if (!tile) return;
+        state.drag.latestClientX = pointerEvent.clientX;
+        state.drag.latestClientY = pointerEvent.clientY;
         const deskRect = desk.getBoundingClientRect();
         const offsetX = state.drag.source === 'workspace' ? state.drag.offsetX : TILE_W / 2;
         const offsetY = state.drag.source === 'workspace' ? state.drag.offsetY : TILE_H / 2;
@@ -1932,8 +1938,10 @@
         const wasClick = !drag.moved;
         const targetTile = drag.targetTileId ? getWorkspaceTile(drag.targetTileId) : null;
         const recipe = drag.targetRecipe;
-        const hasPointerCoords = Number.isFinite(pointerEvent.clientX) && Number.isFinite(pointerEvent.clientY);
-        const onTrash = hasPointerCoords ? trashHit(pointerEvent.clientX, pointerEvent.clientY) : false;
+        const clientX = Number.isFinite(pointerEvent.clientX) ? pointerEvent.clientX : drag.latestClientX;
+        const clientY = Number.isFinite(pointerEvent.clientY) ? pointerEvent.clientY : drag.latestClientY;
+        const hasPointerCoords = Number.isFinite(clientX) && Number.isFinite(clientY);
+        const onTrash = hasPointerCoords ? trashHit(clientX, clientY) : false;
         setTileHighlight(null, null);
         trashZone.classList.remove('active');
 
@@ -2092,11 +2100,8 @@
           if ((event.key === 'Enter' || event.key === ' ') && focusedElement === desk) {
             event.preventDefault();
             const firstTile = desk.querySelector('.tile');
-            const firstInventory = inventoryList.querySelector('.inventory-row');
             if (firstTile) {
               firstTile.focus();
-            } else if (firstInventory) {
-              firstInventory.focus();
             }
           }
           if (isDebugMode() && event.shiftKey && event.altKey && (event.key === 'A' || event.key === 'a')) {
