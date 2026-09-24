@@ -1011,6 +1011,7 @@
         drag: null,
         lastAudit: null,
         selectedTileId: null,
+        activeTileId: null,
         storageWarningShown: false
       };
 
@@ -1034,7 +1035,7 @@
       const collectionGrid = document.getElementById('collectionGrid');
       const rootGrid = document.getElementById('rootGrid');
       const rootRules = document.getElementById('rootRules');
-      const modalState = { lastFocused: null };
+      const modalState = { lastFocused: null, previousBodyOverflow: '' };
 
       function buildCatalog(defs) {
         const catalog = {};
@@ -1278,6 +1279,9 @@
         if (state.selectedTileId === tileId) {
           state.selectedTileId = null;
         }
+        if (state.activeTileId === tileId) {
+          state.activeTileId = null;
+        }
         saveState();
         renderWorkspace();
       }
@@ -1285,6 +1289,7 @@
       function clearDesk() {
         state.workspace = [];
         state.selectedTileId = null;
+        state.activeTileId = null;
         saveState();
         renderWorkspace();
       }
@@ -1299,6 +1304,7 @@
         inventorySearch.value = '';
         state.activeInfoId = null;
         state.selectedTileId = null;
+        state.activeTileId = null;
         try {
           localStorage.removeItem(STORAGE_KEY);
         } catch (error) {
@@ -1428,8 +1434,12 @@
         if (state.selectedTileId && !state.workspace.some((tile) => tile.id === state.selectedTileId)) {
           state.selectedTileId = null;
         }
+        if (state.activeTileId && !state.workspace.some((tile) => tile.id === state.activeTileId)) {
+          state.activeTileId = null;
+        }
         desk.querySelectorAll('.tile').forEach((node) => node.remove());
         const sorted = [...state.workspace].sort((a, b) => a.z - b.z);
+        const tabbableTileId = state.activeTileId || state.selectedTileId || (sorted[sorted.length - 1] ? sorted[sorted.length - 1].id : null);
         for (const tile of sorted) {
           const item = CATALOG[tile.itemId];
           if (!item) continue;
@@ -1441,7 +1451,7 @@
           node.className = 'tile';
           node.dataset.tileId = String(tile.id);
           node.dataset.itemId = item.id;
-          node.tabIndex = 0;
+          node.tabIndex = tile.id === tabbableTileId ? 0 : -1;
           node.setAttribute('aria-label', item.label + '. Press Enter for info, S to select, C to combine with a selected tile, or Delete to discard.');
           node.style.left = pos.x + 'px';
           node.style.top = pos.y + 'px';
@@ -1594,6 +1604,7 @@
         }
         if (!getOpenBackdrop()) {
           modalState.lastFocused = triggerEl instanceof HTMLElement ? triggerEl : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+          modalState.previousBodyOverflow = document.body.style.overflow;
         }
         appShell.inert = true;
         appShell.setAttribute('inert', '');
@@ -1616,11 +1627,12 @@
         if (!getOpenBackdrop()) {
           appShell.inert = false;
           appShell.removeAttribute('inert');
-          document.body.style.overflow = '';
+          document.body.style.overflow = modalState.previousBodyOverflow;
           if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
           }
           modalState.lastFocused = null;
+          modalState.previousBodyOverflow = '';
         }
       }
 
@@ -1644,6 +1656,7 @@
 
       function setSelectedTile(tileId) {
         state.selectedTileId = state.selectedTileId === tileId ? null : tileId;
+        state.activeTileId = tileId;
         renderWorkspace();
       }
 
@@ -1660,6 +1673,7 @@
         };
         state.workspace.push(newTile);
         state.selectedTileId = newTile.id;
+        state.activeTileId = newTile.id;
         saveState();
         renderAll();
       }
@@ -1677,6 +1691,7 @@
         const pos = keyboardSpawnPosition();
         const tile = createWorkspaceTile(itemId, pos.x, pos.y);
         state.selectedTileId = tile.id;
+        state.activeTileId = tile.id;
         renderWorkspace();
         pushToast('Desk copy added', CATALOG[itemId].label + ' was placed on the desk for keyboard play.', 'success');
       }
@@ -1936,6 +1951,17 @@
           if (!tile) return;
           beginDragFromWorkspace(Number(tile.dataset.tileId), event);
         });
+        desk.addEventListener('focusin', (event) => {
+          const tile = event.target.closest('.tile');
+          if (!tile) return;
+          const tileId = Number(tile.dataset.tileId);
+          if (state.activeTileId !== tileId) {
+            state.activeTileId = tileId;
+            desk.querySelectorAll('.tile').forEach((node) => {
+              node.tabIndex = Number(node.dataset.tileId) === tileId ? 0 : -1;
+            });
+          }
+        });
 
         document.addEventListener('pointermove', handleDeskPointerMove);
         document.addEventListener('pointerup', handleDeskPointerUp);
@@ -2016,6 +2042,16 @@
           if ((event.key === 'Enter' || event.key === ' ') && document.activeElement?.classList.contains('tile')) {
             event.preventDefault();
             openInfo(document.activeElement.dataset.itemId, document.activeElement);
+          }
+          if ((event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'ArrowRight' || event.key === 'ArrowDown') && document.activeElement?.classList.contains('tile')) {
+            event.preventDefault();
+            const tiles = [...desk.querySelectorAll('.tile')];
+            const currentIndex = tiles.indexOf(document.activeElement);
+            if (currentIndex !== -1 && tiles.length > 1) {
+              const direction = (event.key === 'ArrowLeft' || event.key === 'ArrowUp') ? -1 : 1;
+              const nextIndex = (currentIndex + direction + tiles.length) % tiles.length;
+              tiles[nextIndex].focus();
+            }
           }
           if ((event.key === 's' || event.key === 'S') && document.activeElement?.classList.contains('tile')) {
             event.preventDefault();
