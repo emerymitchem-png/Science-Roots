@@ -1441,6 +1441,7 @@
           node.className = 'tile';
           node.dataset.tileId = String(tile.id);
           node.dataset.itemId = item.id;
+          node.tabIndex = 0;
           node.setAttribute('aria-label', item.label + '. Press Enter for info, S to select, C to combine with a selected tile, or Delete to discard.');
           node.style.left = pos.x + 'px';
           node.style.top = pos.y + 'px';
@@ -1517,7 +1518,7 @@
         return CURATED_RECIPES.filter((recipe) => recipe.result === itemId);
       }
 
-      function openInfo(itemId) {
+      function openInfo(itemId, triggerEl) {
         const item = CATALOG[itemId];
         if (!item) return;
         state.activeInfoId = itemId;
@@ -1551,7 +1552,7 @@
             infoRecipes.appendChild(row);
           }
         }
-        openBackdrop(infoBackdrop, document.getElementById('closeInfoButton'));
+        openBackdrop(infoBackdrop, document.getElementById('closeInfoButton'), triggerEl);
       }
 
       function closeInfo() {
@@ -1559,18 +1560,18 @@
         closeBackdrop(infoBackdrop);
       }
 
-      function openCollection() {
+      function openCollection(triggerEl) {
         renderCollection();
-        openBackdrop(collectionBackdrop, document.getElementById('closeCollectionButton'));
+        openBackdrop(collectionBackdrop, document.getElementById('closeCollectionButton'), triggerEl);
       }
 
       function closeCollection() {
         closeBackdrop(collectionBackdrop);
       }
 
-      function openRoots() {
+      function openRoots(triggerEl) {
         renderRootLibrary();
-        openBackdrop(rootsBackdrop, document.getElementById('closeRootsButton'));
+        openBackdrop(rootsBackdrop, document.getElementById('closeRootsButton'), triggerEl);
       }
 
       function closeRoots() {
@@ -1586,16 +1587,15 @@
         return [infoBackdrop, collectionBackdrop, rootsBackdrop].find((node) => node.classList.contains('open')) || null;
       }
 
-      function openBackdrop(backdrop, initialFocusEl) {
+      function openBackdrop(backdrop, initialFocusEl, triggerEl) {
         const openBackdropNode = getOpenBackdrop();
         if (openBackdropNode && openBackdropNode !== backdrop) {
           closeBackdrop(openBackdropNode, { restoreFocus: false });
         }
         if (!getOpenBackdrop()) {
-          modalState.lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          modalState.lastFocused = triggerEl instanceof HTMLElement ? triggerEl : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
         }
         appShell.inert = true;
-        appShell.setAttribute('aria-hidden', 'true');
         backdrop.hidden = false;
         backdrop.classList.add('open');
         backdrop.setAttribute('aria-hidden', 'false');
@@ -1614,7 +1614,6 @@
         backdrop.hidden = true;
         if (!getOpenBackdrop()) {
           appShell.inert = false;
-          appShell.removeAttribute('aria-hidden');
           document.body.style.overflow = '';
           if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
@@ -1857,7 +1856,7 @@
         if (!draggedTile) {
           if (drag.source === 'inventory' && !drag.moved) {
             state.drag = null;
-            openInfo(drag.itemId);
+            openInfo(drag.itemId, drag.pointerCapturedBy);
             return;
           }
           state.drag = null;
@@ -1868,9 +1867,9 @@
         if (wasClick) {
           if (drag.source === 'inventory') {
             removeWorkspaceTile(drag.tileId);
-            openInfo(drag.itemId);
+            openInfo(drag.itemId, drag.pointerCapturedBy);
           } else {
-            openInfo(drag.itemId);
+            openInfo(drag.itemId, drag.pointerCapturedBy);
             saveState();
             renderWorkspace();
           }
@@ -1939,9 +1938,9 @@
         document.addEventListener('pointermove', handleDeskPointerMove);
         document.addEventListener('pointerup', handleDeskPointerUp);
         document.addEventListener('pointercancel', handleDeskPointerUp);
-        document.getElementById('openCollectionButton').addEventListener('click', openCollection);
+        document.getElementById('openCollectionButton').addEventListener('click', (event) => openCollection(event.currentTarget));
         document.getElementById('closeCollectionButton').addEventListener('click', closeCollection);
-        document.getElementById('openRootsButton').addEventListener('click', openRoots);
+        document.getElementById('openRootsButton').addEventListener('click', (event) => openRoots(event.currentTarget));
         document.getElementById('closeRootsButton').addEventListener('click', closeRoots);
         document.getElementById('closeInfoButton').addEventListener('click', closeInfo);
         document.getElementById('clearDeskButton').addEventListener('click', () => {
@@ -2010,11 +2009,11 @@
           }
           if ((event.key === 'i' || event.key === 'I') && document.activeElement?.classList.contains('inventory-row')) {
             event.preventDefault();
-            openInfo(document.activeElement.dataset.itemId);
+            openInfo(document.activeElement.dataset.itemId, document.activeElement);
           }
           if ((event.key === 'Enter' || event.key === ' ') && document.activeElement?.classList.contains('tile')) {
             event.preventDefault();
-            openInfo(document.activeElement.dataset.itemId);
+            openInfo(document.activeElement.dataset.itemId, document.activeElement);
           }
           if ((event.key === 's' || event.key === 'S') && document.activeElement?.classList.contains('tile')) {
             event.preventDefault();
