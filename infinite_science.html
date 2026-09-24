@@ -632,7 +632,7 @@
   <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="false"></div>
 
   <div class="modal-backdrop" id="infoBackdrop" aria-hidden="true" hidden>
-    <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+    <section class="sheet" aria-labelledby="infoTitle" aria-describedby="infoSubtitle" aria-modal="true" aria-hidden="true" role="dialog" tabindex="-1" hidden>
       <div class="panel-head">
         <div>
           <h3 id="infoTitle">Discovery</h3>
@@ -663,7 +663,7 @@
   </div>
 
   <div class="modal-backdrop" id="collectionBackdrop" aria-hidden="true" hidden>
-    <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+    <section class="modal" aria-labelledby="collectionTitle" aria-describedby="collectionSubtitle" aria-modal="true" aria-hidden="true" role="dialog" tabindex="-1" hidden>
       <div class="panel-head">
         <div>
           <h3 id="collectionTitle">Collection</h3>
@@ -678,7 +678,7 @@
   </div>
 
   <div class="modal-backdrop" id="rootsBackdrop" aria-hidden="true" hidden>
-    <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" role="dialog" tabindex="-1">
+    <section class="modal" aria-labelledby="rootsTitle" aria-describedby="rootsSubtitle" aria-modal="true" aria-hidden="true" role="dialog" tabindex="-1" hidden>
       <div class="panel-head">
         <div>
           <h3 id="rootsTitle">Root Library</h3>
@@ -1372,6 +1372,11 @@
 
       function resetGame() {
         if (!window.confirm('Reset the game? This clears the desk, discovery collection, and saved progress.')) return;
+        const openBackdropNode = getOpenBackdrop();
+        if (openBackdropNode) {
+          closeBackdrop(openBackdropNode, { restoreFocus: false });
+        }
+        modalState.lastFocused = null;
         state.discovered = new Set(STARTING_ITEM_IDS);
         state.workspace = [];
         state.nextTileId = 1;
@@ -1713,6 +1718,7 @@
 
       function openBackdrop(backdrop, initialFocusEl, triggerEl) {
         const openBackdropNode = getOpenBackdrop();
+        const dialog = backdrop.querySelector('[role="dialog"]');
         const nextFocusTarget = triggerEl instanceof HTMLElement
           ? triggerEl
           : (document.activeElement instanceof HTMLElement ? document.activeElement : null);
@@ -1721,12 +1727,15 @@
         }
         modalState.lastFocused = nextFocusTarget;
         appShell.inert = true;
-        appShell.setAttribute('inert', '');
         backdrop.hidden = false;
         backdrop.classList.add('open');
         backdrop.setAttribute('aria-hidden', 'false');
+        if (dialog) {
+          dialog.hidden = false;
+          dialog.setAttribute('aria-hidden', 'false');
+        }
         document.body.style.overflow = 'hidden';
-        const focusTarget = initialFocusEl || getFocusableElements(backdrop)[0] || backdrop.querySelector('[role=\"dialog\"]');
+        const focusTarget = initialFocusEl || getFocusableElements(backdrop)[0] || dialog;
         if (focusTarget) {
           focusTarget.focus();
         }
@@ -1735,12 +1744,16 @@
       function closeBackdrop(backdrop, options = {}) {
         const { restoreFocus = true, clearStoredFocus = true } = options;
         const wasOpen = backdrop.classList.contains('open');
+        const dialog = backdrop.querySelector('[role="dialog"]');
         backdrop.classList.remove('open');
         backdrop.setAttribute('aria-hidden', 'true');
         backdrop.hidden = true;
+        if (dialog) {
+          dialog.setAttribute('aria-hidden', 'true');
+          dialog.hidden = true;
+        }
         if (!getOpenBackdrop()) {
           appShell.inert = false;
-          appShell.removeAttribute('inert');
           document.body.style.overflow = '';
           if (restoreFocus && wasOpen && modalState.lastFocused && document.contains(modalState.lastFocused)) {
             modalState.lastFocused.focus();
@@ -1881,6 +1894,8 @@
           tileId: null,
           startX: pointerEvent.clientX,
           startY: pointerEvent.clientY,
+          lastClientX: pointerEvent.clientX,
+          lastClientY: pointerEvent.clientY,
           moved: false,
           pointerCapturedBy: row
         };
@@ -1919,6 +1934,8 @@
           offsetY: pointerEvent.clientY - freshRect.top,
           startX: pointerEvent.clientX,
           startY: pointerEvent.clientY,
+          lastClientX: pointerEvent.clientX,
+          lastClientY: pointerEvent.clientY,
           moved: false,
           pointerCapturedBy: freshNode
         };
@@ -1926,6 +1943,10 @@
 
       function updateDraggedTile(pointerEvent) {
         if (!state.drag) return;
+        if (Number.isFinite(pointerEvent.clientX) && Number.isFinite(pointerEvent.clientY)) {
+          state.drag.lastClientX = pointerEvent.clientX;
+          state.drag.lastClientY = pointerEvent.clientY;
+        }
         if (state.drag.source === 'inventory' && !state.drag.tileId) {
           const dx = pointerEvent.clientX - state.drag.startX;
           const dy = pointerEvent.clientY - state.drag.startY;
@@ -1981,8 +2002,10 @@
         const wasClick = !drag.moved;
         const targetTile = drag.targetTileId ? getWorkspaceTile(drag.targetTileId) : null;
         const recipe = drag.targetRecipe;
-        const hasPointerCoords = Number.isFinite(pointerEvent.clientX) && Number.isFinite(pointerEvent.clientY);
-        const onTrash = hasPointerCoords ? trashHit(pointerEvent.clientX, pointerEvent.clientY) : false;
+        const pointerX = Number.isFinite(pointerEvent.clientX) ? pointerEvent.clientX : drag.lastClientX;
+        const pointerY = Number.isFinite(pointerEvent.clientY) ? pointerEvent.clientY : drag.lastClientY;
+        const hasPointerCoords = Number.isFinite(pointerX) && Number.isFinite(pointerY);
+        const onTrash = hasPointerCoords ? trashHit(pointerX, pointerY) : false;
         setTileHighlight(null, null);
         trashZone.classList.remove('active');
 
